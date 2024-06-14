@@ -1,0 +1,59 @@
+/*
+Copyright (c) 2020 Shotgun Software Inc
+
+CONFIDENTIAL AND PROPRIETARY
+
+This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+Source Code License included in this distribution package. See LICENSE.
+By accessing, using, copying or modifying this work you indicate your
+agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
+not expressly granted therein are reserved by Autodesk, Inc.
+*/
+
+QToolButton#filter_btn,
+QToolButton#up_to_date_filter_btn,
+QToolButton#out_of_date_filter_btn,
+QToolButton#details_button,
+QToolButton#thumbnail_view_btn,
+QToolButton#grid_view_btn,
+QToolButton#list_view_btn,
+QToolButton#refresh_btn
+{
+  border: none;
+  outline: none;
+  padding: 4px;
+}
+QToolButton#refresh_btn {
+  padding-right: 18px;
+}
+
+QToolButton#up_to_date_filter_btn:checked,
+QToolButton#out_of_date_filter_btn:checked,
+QToolButton#thumbnail_view_btn:checked,
+QToolButton#grid_view_btn:checked,
+QToolButton#list_view_btn:checked,
+QToolButton#filter_btn:hover,
+QToolButton#up_to_date_filter_btn:hover,
+QToolButton#out_of_date_filter_btn:hover,
+QToolButton#details_button:hover,
+QToolButton#thumbnail_view_btn:hover,
+QToolButton#grid_view_btn:hover,
+QToolButton#list_view_btn:hover,
+QToolButton#refresh_btn:hover
+{
+  background-color: palette(light);
+  border-radius: 4px;
+}
+
+QToolButton[popupMode="2"] {
+  padding-right: 20px;
+}
+
+QToolButton::menu-button {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  width: 16px;
+}
+QToolButton::menu-button:hover {
+  background-color: palette(midlight);
+}

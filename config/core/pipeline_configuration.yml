@@ -1,0 +1,6 @@
+pc_id: 300
+pc_name: Primary
+project_id: 421
+project_name: test
+published_file_entity_type: PublishedFile
+use_shotgun_path_cache: true

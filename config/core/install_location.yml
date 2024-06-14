@@ -1,0 +1,10 @@
+# Flow Production Tracking Toolkit configuration file
+# This file was automatically created by setup_project
+# This file reflects the paths in the primary pipeline
+# configuration defined for this project.
+
+Windows: 'X:\ShotGrid_Test_jw\Project\config_test'
+Darwin: ''
+Linux: ''
+
+# End of file.
