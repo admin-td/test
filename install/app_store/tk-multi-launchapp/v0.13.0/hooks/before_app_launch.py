@@ -48,3 +48,11 @@ class BeforeAppLaunch(tank.Hook):
 
         # you can set environment variables like this:
         # os.environ["MY_SETTING"] = "foo bar"
+
+        if engine_name == "tk-nuke":
+            nuke_path = os.getenv("NUKE_PATH")
+            if nuke_path:
+                os.environ["NUKE_PATH"] = "{0};X:/Inhouse/nuke/".format(nuke_path)
+            else:
+                os.environ["NUKE_PATH"] = "X:/Inhouse/nuke/"
+

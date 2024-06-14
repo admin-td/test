@@ -176,30 +176,30 @@ class NukeEngine(sgtk.platform.Engine):
             return
 
         # Versions > 14.0 have not yet been tested so show a message to that effect.
-        if nuke_version[0] > 14 or (nuke_version[0] == 14 and nuke_version[1] > 1):
-            # This is an untested version of Nuke.
-            msg = (
-                "The Flow Production Tracking has not yet been fully tested "
-                "with Nuke %d.%dv%d. You can continue to use the Toolkit but you may "
-                "experience bugs or instability. Please report any issues to our support "
-                "team via %s"
-                % (nuke_version[0], nuke_version[1], nuke_version[2], sgtk.support_url)
-            )
-
-            # Show nuke message if in UI mode, this is the first time the engine has been started
-            # and the warning dialog isn't overridden by the config. Note that nuke.message isn't
-            # available in Hiero, so we have to skip this there.
-            if (
-                self.has_ui
-                and "TANK_NUKE_ENGINE_INIT_NAME" not in os.environ
-                and nuke_version[0]
-                >= self.get_setting("compatibility_dialog_min_version", 11)
-                and not self.hiero_enabled
-            ):
-                nuke.message("Warning - Flow Production Tracking!\n\n%s" % msg)
-
-            # Log the warning.
-            self.logger.warning(msg)
+        # if nuke_version[0] > 14 or (nuke_version[0] == 14 and nuke_version[1] > 1):
+        #     # This is an untested version of Nuke.
+        #     msg = (
+        #         "The Flow Production Tracking has not yet been fully tested "
+        #         "with Nuke %d.%dv%d. You can continue to use the Toolkit but you may "
+        #         "experience bugs or instability. Please report any issues to our support "
+        #         "team via %s"
+        #         % (nuke_version[0], nuke_version[1], nuke_version[2], sgtk.support_url)
+        #     )
+        #
+        #     # Show nuke message if in UI mode, this is the first time the engine has been started
+        #     # and the warning dialog isn't overridden by the config. Note that nuke.message isn't
+        #     # available in Hiero, so we have to skip this there.
+        #     if (
+        #         self.has_ui
+        #         and "TANK_NUKE_ENGINE_INIT_NAME" not in os.environ
+        #         and nuke_version[0]
+        #         >= self.get_setting("compatibility_dialog_min_version", 11)
+        #         and not self.hiero_enabled
+        #     ):
+        #         nuke.message("Warning - Flow Production Tracking!\n\n%s" % msg)
+        #
+        #     # Log the warning.
+        #     self.logger.warning(msg)
 
         # Make sure we are not running Nuke PLE or Non-Commercial!
         if nuke.env.get("ple"):
