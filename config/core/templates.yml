@@ -181,9 +181,9 @@ paths:
     #
     # These don't require the standard formatting (with definition and root_name) because they
     # will be set within each template that uses the alias.
-    shot_root: sequences/{Sequence}/{Shot}/{Step}
+    shot_root: 04_SEQ/{Sequence}/{Shot}
     asset_root: assets/{sg_asset_type}/{Asset}/{Step}
-    sequence_root: sequences/{Sequence}
+    sequence_root: 04_SEQ/{Sequence}
 
 
     ##########################################################################################
@@ -393,19 +393,19 @@ paths:
 
     # define the location of a work area
     shot_work_area_nuke:
-        definition: '@shot_root/work/nuke'
+        definition: '@shot_root/Comp/work/nuke'
     # define the location of a publish area
     shot_publish_area_nuke:
-        definition: '@shot_root/publish/nuke'
+        definition: '@shot_root/Comp/publish/nuke'
     # The location of WIP script files
     nuke_shot_work:
-        definition: '@shot_root/work/nuke/{name}.v{version}.nk'
+        definition: '@shot_root/Comp/work/nuke/{name}_v{version}.nk'
     # The location of backups of WIP files
     nuke_shot_snapshot:
-        definition: '@shot_root/work/nuke/snapshots/{name}.v{version}.{timestamp}.nk'
+        definition: '@shot_root/Comp/work/nuke/snapshots/{name}_v{version}_{timestamp}.nk'
     # The location of published nuke script files
     nuke_shot_publish:
-        definition: '@shot_root/publish/nuke/{name}.v{version}.nk'
+        definition: '@shot_root/Comp/publish/nuke/{name}_v{version}.nk'
     # write node outputs
     nuke_shot_render_mono_dpx:
         definition: '@shot_root/work/images/{name}/v{version}/{width}x{height}/{Shot}_{name}_{nuke.output}_v{version}.{SEQ}.dpx'
@@ -419,7 +419,7 @@ paths:
     shot_quicktime_quick:
         definition: '@shot_root/review/quickdaily/{Shot}_{name}_{iteration}.mov'
     nuke_shot_render_movie:
-        definition: '@shot_root/review/{Shot}_{name}_{nuke.output}_v{version}.mov'
+        definition: '@shot_root/Comp/Renders/mov/{Shot}_{name}_{nuke.output}_v{version}.mov'
 
     #
     # Hiero
