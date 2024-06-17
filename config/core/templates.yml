@@ -39,7 +39,7 @@ keys:
         type: str
     name:
         type: str
-        filter_by: alphanumeric
+#        filter_by: alphanumeric
     iteration:
         type: int
     version:

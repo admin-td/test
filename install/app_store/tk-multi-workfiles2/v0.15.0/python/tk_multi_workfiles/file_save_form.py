@@ -122,8 +122,10 @@ class FileSaveForm(FileFormBase):
         self.window().resize(self.minimumSizeHint())
 
         # default state for the version controls is to use the next available version:
+        self._ui.use_next_available_cb.setVisible(False)
         self._ui.use_next_available_cb.setChecked(True)
         self._ui.version_spinner.setEnabled(False)
+        self._ui.name_edit.setEnabled(False)
 
         # hook up signals on controls:
         self._ui.save_btn.clicked.connect(self._on_save)
@@ -351,10 +353,10 @@ class FileSaveForm(FileFormBase):
         if name_is_used:
             if not env.work_template.is_optional("name") and not name:
                 raise TankError("Name is required, please enter a valid name!")
-            if name:
-                if not env.work_template.keys["name"].validate(name):
-                    raise TankError("Name contains illegal characters!")
-                fields["name"] = name
+            # if name:
+            #     if not env.work_template.keys["name"].validate(name):
+            #         raise TankError("Name contains illegal characters!")
+            fields["name"] = name
 
         ext_is_used = "extension" in env.work_template.keys
         if ext_is_used and ext != None:
@@ -544,7 +546,8 @@ class FileSaveForm(FileFormBase):
                 # need to use either the current name if we have it or the default if we don't!
                 current_name = value_to_str(self._ui.name_edit.text())
                 default_name = self._current_env.save_as_default_name
-                name = current_name or default_name or "scene"
+                # name = current_name or default_name or "scene"
+                name = self._current_env.context.entity['name'] + '_comp'
 
             self._ui.name_edit.setText(name)
 
@@ -592,7 +595,8 @@ class FileSaveForm(FileFormBase):
                 )
                 if not name and not name_is_optional:
                     # lets populate name with a default value:
-                    name = self._current_env.save_as_default_name or "scene"
+                    # name = self._current_env.save_as_default_name or self._current_env.context.entity['name']+'_comp'
+                    name = self._current_env.context.entity['name'] + '_comp'
                 self._ui.name_edit.setText(name)
 
             self._ui.name_label.setVisible(name_is_used)
@@ -628,7 +632,8 @@ class FileSaveForm(FileFormBase):
             version_is_used = "version" in self._current_env.work_template.keys
             self._ui.version_label.setVisible(version_is_used)
             self._ui.version_spinner.setVisible(version_is_used)
-            self._ui.use_next_available_cb.setVisible(version_is_used)
+            # self._ui.use_next_available_cb.setVisible(version_is_used)
+            self._ui.use_next_available_cb.setVisible(False)
 
     def _on_expand_toggled(self, checked):
         """ """
