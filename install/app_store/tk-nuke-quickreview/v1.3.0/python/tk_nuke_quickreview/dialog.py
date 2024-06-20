@@ -224,7 +224,7 @@ class Dialog(QtGui.QWidget):
         self._group_node.node("top_left_text")["font"].setValue(font)
         self._group_node.node("top_right_text")["font"].setValue(font)
         self._group_node.node("bottom_left_text")["font"].setValue(font)
-        self._group_node.node("framecounter")["font"].setValue(font)
+        # self._group_node.node("framecounter")["font"].setValue(font)
         self._group_node.node("slate_info")["font"].setValue(font)
 
         # get burnins and slate info from hook
@@ -237,15 +237,15 @@ class Dialog(QtGui.QWidget):
         )
 
         # set up burnins
-        self._group_node.node("top_left_text")["message"].setValue(
-            fields_dict["top_left"]
-        )
-        self._group_node.node("top_right_text")["message"].setValue(
-            fields_dict["top_right"]
-        )
-        self._group_node.node("bottom_left_text")["message"].setValue(
-            fields_dict["bottom_left"]
-        )
+        # self._group_node.node("top_left_text")["message"].setValue(
+        #     fields_dict["top_left"]
+        # )
+        # self._group_node.node("top_right_text")["message"].setValue(
+        #     fields_dict["top_right"]
+        # )
+        # self._group_node.node("bottom_left_text")["message"].setValue(
+        #     fields_dict["bottom_left"]
+        # )
         # note: bottom right is used as a frame counter.
 
         # set up slate
