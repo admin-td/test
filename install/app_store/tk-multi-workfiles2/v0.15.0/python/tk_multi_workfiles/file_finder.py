@@ -47,7 +47,6 @@ class FileFinder(QtCore.QObject):
             """ """
             Threaded.__init__(self)
             self._name_map = {}
-            self.matches = []
 
         @Threaded.exclusive
         def get_name(self, file_key, path, template, fields=None):
