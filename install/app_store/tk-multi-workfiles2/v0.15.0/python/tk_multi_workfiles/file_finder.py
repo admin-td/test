@@ -11,7 +11,9 @@
 import os
 from datetime import datetime
 import copy
+import re
 import time
+import nuke
 
 import sgtk
 from sgtk.platform.qt import QtCore
@@ -45,6 +47,7 @@ class FileFinder(QtCore.QObject):
             """ """
             Threaded.__init__(self)
             self._name_map = {}
+            self.matches = []
 
         @Threaded.exclusive
         def get_name(self, file_key, path, template, fields=None):
@@ -234,6 +237,22 @@ class FileFinder(QtCore.QObject):
 
         return file_items
 
+    @staticmethod
+    def extract_version_and_author(text):
+        pattern = r'version_(\d+)\s+by_(.+)'
+        matches = re.findall(pattern, text)
+
+        return matches
+
+    @staticmethod
+    def read_notepad(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                content = file.read()  # 파일 내용을 읽어옴
+            return content
+        except:
+            pass
+
     def _process_work_files(
         self,
         work_files,
@@ -257,6 +276,12 @@ class FileFinder(QtCore.QObject):
                   :class:`FileItem`.
         """
         files = {}
+        if work_files:
+            original_path = work_files[0] or None
+            comp_index = original_path['path'].find('Comp')
+            notepad_path = original_path['path'][:comp_index] + 'editorial\\test.txt' or None
+            content = self.read_notepad(notepad_path)
+            matches = self.extract_version_and_author(content)
 
         for work_file in work_files:
 
@@ -319,6 +344,12 @@ class FileFinder(QtCore.QObject):
                 file_details["modified_by"] = g_user_cache.get_file_last_modified_user(
                     work_path
                 )
+                version = wf_fields.get("version", 0)
+                if work_files and matches:
+                    for match in matches:
+                        if version == int(match[0]):
+                            file_details["modified_by"] = match[1]
+                            break
 
             if not file_details["name"]:
                 # make sure all files with the same key have the same name:

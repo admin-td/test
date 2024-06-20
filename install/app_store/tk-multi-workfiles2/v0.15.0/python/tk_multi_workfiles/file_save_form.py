@@ -330,7 +330,7 @@ class FileSaveForm(FileFormBase):
         self._disable_save_and_warn(msg)
 
     def _generate_path(
-        self, env, name, version, use_next_version, ext, require_path=False
+            self, env, name, version, use_next_version, ext, require_path=False
     ):
         """
         :returns:   Tuple containing (path, min_version)
@@ -403,13 +403,13 @@ class FileSaveForm(FileFormBase):
                 try:
                     finder = FileFinder()
                     files = (
-                        finder.find_files(
-                            env.work_template,
-                            env.publish_template,
-                            env.context,
-                            file_key,
-                        )
-                        or []
+                            finder.find_files(
+                                env.work_template,
+                                env.publish_template,
+                                env.context,
+                                file_key,
+                            )
+                            or []
                     )
                 except TankError as e:
                     raise TankError("Failed to find files for this work area: %s" % e)
@@ -540,7 +540,7 @@ class FileSaveForm(FileFormBase):
             # update name edit:
             name = fields.get("name", "")
             name_is_optional = (
-                name_is_used and self._current_env.work_template.is_optional("name")
+                    name_is_used and self._current_env.work_template.is_optional("name")
             )
             if not name and not name_is_optional:
                 # need to use either the current name if we have it or the default if we don't!
@@ -591,7 +591,7 @@ class FileSaveForm(FileFormBase):
                 # try to set something valid for the name:
                 name = value_to_str(self._ui.name_edit.text())
                 name_is_optional = (
-                    name_is_used and self._current_env.work_template.is_optional("name")
+                        name_is_used and self._current_env.work_template.is_optional("name")
                 )
                 if not name and not name_is_optional:
                     # lets populate name with a default value:
@@ -616,7 +616,7 @@ class FileSaveForm(FileFormBase):
                 current_ext_idx = self._ui.file_type_menu.currentIndex()
                 current_ext = ""
                 if current_ext_idx >= 0 and current_ext_idx < len(
-                    self._extension_choices
+                        self._extension_choices
                 ):
                     current_ext = self._extension_choices[current_ext_idx]
                 if current_ext in ext_choices:
@@ -666,6 +666,35 @@ class FileSaveForm(FileFormBase):
 
             # resize the window to the collapsed size:
             self.window().resize(self._collapsed_size)
+
+    def get_task_field_value(self, sg, task_id, field_name):
+        fields = [field_name]
+        task_data = sg.find_one('Task', [['id', 'is', task_id]], fields)
+
+        if not task_data:
+            raise ValueError(f"Task with id {task_id} not found.")
+
+        return task_data.get(field_name)
+
+    def add_versions(self, initial_text, additional_versions):
+        # 기존 문자열을 리스트로 변환하고 양 끝의 공백 제거 (빈 문자열로 시작할 때는 빈 리스트로 시작)
+        lines = initial_text.strip().split('\n') if initial_text else []
+
+        # 새로운 버전 정보 추가
+        for version in additional_versions:
+            lines.append(version)
+
+        # 모든 줄을 하나의 문자열로 합침
+        updated_text = "\n".join(lines)
+
+        return updated_text
+
+    def save_to_notepad(self, file_path, text):
+        try:
+            with open(file_path, 'w') as file:
+                file.write(text + '\n')
+        except:
+            pass
 
     def _on_save(self):
         """ """
@@ -719,8 +748,8 @@ class FileSaveForm(FileFormBase):
                 raise TankError("Failed to generate a path to save to - %s" % e)
 
             if (
-                version_to_save is not None  # version is used in the path
-                and version_to_save != version
+                    version_to_save is not None  # version is used in the path
+                    and version_to_save != version
             ):  # version in the path is different to the one in the UI!
                 # check to see if the version has changed as a result of the
                 # preview generation - if it has then we should double check
@@ -734,25 +763,25 @@ class FileSaveForm(FileFormBase):
                 if version_to_save == 1:
                     if name_is_used and name:
                         msg = (
-                            "We didn't find any existing versions of the file '%s' "
-                            % name
+                                "We didn't find any existing versions of the file '%s' "
+                                % name
                         )
                     else:
                         msg = "We didn't find any existing versions of this file "
                 else:
                     if name_is_used and name:
                         msg = (
-                            "We found a more recent version (v%03d) of the file '%s' "
-                            % (version_to_save - 1, name)
+                                "We found a more recent version (v%03d) of the file '%s' "
+                                % (version_to_save - 1, name)
                         )
                     else:
                         msg = "We found a more recent version (v%03d) of this file " % (
-                            version_to_save - 1
+                                version_to_save - 1
                         )
                 msg += (
-                    "in the selected work area:\n\n  %s\n\n"
-                    "Would you like to continue saving as v%03d, the next available version?"
-                    % (self._current_env.context, version_to_save)
+                        "in the selected work area:\n\n  %s\n\n"
+                        "Would you like to continue saving as v%03d, the next available version?"
+                        % (self._current_env.context, version_to_save)
                 )
 
                 answer = QtGui.QMessageBox.question(
@@ -799,6 +828,23 @@ class FileSaveForm(FileFormBase):
                     work_path=path_to_save,
                     work_version=version_to_save,
                 )
+                config_path = r'X:\ShotGrid_Test_jw\Project\config_test'
+                tk = sgtk.sgtk_from_path(config_path)
+                sg = tk.shotgun
+
+                task_id = self._current_env.context.task['id']
+                field_name = 'sg_modified_by'
+                new_data = ['version_' + str(version) + ' by_' + self._current_env.context.user['name']]
+                field_value = self.get_task_field_value(sg, task_id, field_name) or ""
+                sg_data = self.add_versions(field_value, new_data)
+
+                status_data = {'sg_modified_by': sg_data}
+                sg.update('Task', task_id, status_data)
+                file_content = str(sg_data)
+                comp_index = path_to_save.find('Comp')
+                notepad_path = path_to_save[:comp_index] + 'editorial\\test.txt'
+                self.save_to_notepad(notepad_path, file_content)
+
             except Exception:
                 app.logger.warning(
                     "Exception raised when executing save hook for work file at %s"
