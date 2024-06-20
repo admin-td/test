@@ -14,6 +14,7 @@ import tempfile
 import datetime
 from sgtk.platform.qt import QtCore, QtGui
 from tank_vendor import six
+import nuke
 
 from .ui.dialog import Ui_Dialog
 
@@ -84,47 +85,64 @@ class Dialog(QtGui.QWidget):
         """
         Sets up the playlist dropdown widget
         """
-        self.ui.playlists.setToolTip(
-            "<p>Shows the 10 most recently updated playlists for "
-            "the project that have a viewing date "
-            "set to the future.</p>"
-        )
+        # self.ui.playlists.setToolTip(
+        #     "<p>Shows the 10 most recently updated playlists for "
+        #     "the project that have a viewing date "
+        #     "set to the future.</p>"
+        # )
 
-        self.ui.playlists.addItem("Add to playlist", 0)
+        self.ui.playlists.addItem("Status", 0)
+        self.ui.playlists.addItem("Wip", 1)
+        self.ui.playlists.addItem("Review", 2)
+        self.ui.playlists.addItem("Temp pub", 3)
+        self.ui.playlists.addItem("Pub", 4)
 
-        from tank_vendor.shotgun_api3.lib.sgtimezone import LocalTimezone
+        self.ui.playlists.activated[str].connect(self._on_combobox_activated)
 
-        datetime_now = datetime.datetime.now(LocalTimezone())
+        # from tank_vendor.shotgun_api3.lib.sgtimezone import LocalTimezone
+        #
+        # datetime_now = datetime.datetime.now(LocalTimezone())
+        #
+        # playlists = self._bundle.shotgun.find(
+        #     "Playlist",
+        #     [
+        #         ["project", "is", self._bundle.context.project],
+        #         {
+        #             "filter_operator": "any",
+        #             "filters": [
+        #                 ["sg_date_and_time", "greater_than", datetime_now],
+        #                 ["sg_date_and_time", "is", None],
+        #             ],
+        #         },
+        #     ],
+        #     ["code", "id", "sg_date_and_time"],
+        #     order=[{"field_name": "updated_at", "direction": "desc"}],
+        #     limit=10,
+        # )
+        #
+        # for playlist in playlists:
+        #
+        #     if playlist.get("sg_date_and_time"):
+        #         # 'Add to playlist dailies (Today 12:00)'
+        #         caption = "%s (%s)" % (
+        #             playlist["code"],
+        #             self._format_timestamp(playlist["sg_date_and_time"]),
+        #         )
+        #     else:
+        #         caption = playlist["code"]
 
-        playlists = self._bundle.shotgun.find(
-            "Playlist",
-            [
-                ["project", "is", self._bundle.context.project],
-                {
-                    "filter_operator": "any",
-                    "filters": [
-                        ["sg_date_and_time", "greater_than", datetime_now],
-                        ["sg_date_and_time", "is", None],
-                    ],
-                },
-            ],
-            ["code", "id", "sg_date_and_time"],
-            order=[{"field_name": "updated_at", "direction": "desc"}],
-            limit=10,
-        )
+            # self.ui.playlists.addItem(caption, playlist["id"])
 
-        for playlist in playlists:
+    def _on_combobox_activated(self, text):
+        if text == "Wip":
+            self.status = 'wip'
+        elif text == "Review":
+            self.status = 'review'
+        elif text == "Pub":
+            self.status = 'pub'
+        elif text == "Temp pub":
+            self.status = 'tmppub'
 
-            if playlist.get("sg_date_and_time"):
-                # 'Add to playlist dailies (Today 12:00)'
-                caption = "%s (%s)" % (
-                    playlist["code"],
-                    self._format_timestamp(playlist["sg_date_and_time"]),
-                )
-            else:
-                caption = playlist["code"]
-
-            self.ui.playlists.addItem(caption, playlist["id"])
 
     def _format_timestamp(self, datetime_obj):
         """
@@ -326,13 +344,24 @@ class Dialog(QtGui.QWidget):
         Submits the render for review.
         """
         try:
+            if self.ui.playlists.itemData(self.ui.playlists.currentIndex()) == 0:
+                # data["playlists"] = [
+                #     {
+                #         "type": "Playlist",
+                #         "id": self.ui.playlists.itemData(self.ui.playlists.currentIndex()),
+                #     }
+                # ]
+                nuke.message("You have to choose status!")
+                return
+
             self._overlay.start_spin()
             self._version_id = self._run_submission()
         except Exception as e:
             logger.exception("An exception was raised.")
             self._overlay.show_error_message("An error was reported: %s" % e)
 
-    def _upload_to_shotgun(self, shotgun, data):
+    @staticmethod
+    def _upload_to_shotgun(shotgun, data, status, task_id):
         """
         Upload quicktime to Shotgun.
 
@@ -344,6 +373,7 @@ class Dialog(QtGui.QWidget):
             shotgun.upload(
                 "Version", data["version_id"], data["file_name"], "sg_uploaded_movie"
             )
+            shotgun.update("Task", task_id, {"sg_status_list": status})
             logger.debug("...Upload complete!")
         finally:
             sgtk.util.filesystem.safe_delete_file(data["file_name"])
@@ -392,14 +422,6 @@ class Dialog(QtGui.QWidget):
             "sg_movie_has_slate": True,
         }
 
-        if self.ui.playlists.itemData(self.ui.playlists.currentIndex()) != 0:
-            data["playlists"] = [
-                {
-                    "type": "Playlist",
-                    "id": self.ui.playlists.itemData(self.ui.playlists.currentIndex()),
-                }
-            ]
-
         # call pre-hook
         data = self._bundle.execute_hook_method(
             "events_hook",
@@ -421,7 +443,7 @@ class Dialog(QtGui.QWidget):
         )
 
         data = {"version_id": entity["id"], "file_name": mov_path}
-        self.__sg_data.execute_method(self._upload_to_shotgun, data)
+        self.__sg_data.execute_method(self._upload_to_shotgun, data, self.status, self._context.task['id'])
 
         return entity["id"]
 
