@@ -1294,6 +1294,26 @@ class AppDialog(QtGui.QWidget):
             # Log the toolkit "Published" metric
             try:
                 self._bundle.log_metric("Published")
+
+                config_path = r'X:\ShotGrid_Test_jw\Project\config_jw3'
+                tk = sgtk.sgtk_from_path(config_path)
+                sg = tk.shotgun
+                task_id = None
+
+                data = {
+                    'sg_status_list': 'pub'
+                }
+
+                current_engine = sgtk.platform.current_engine()
+                context = current_engine.context
+
+                if context.task and context.task['type'] == 'Task':
+                    task_id = context.task['id']
+                else:
+                    pass
+
+                sg.update('Task', task_id, data)
+
             except:
                 # ignore all errors. ex: using a core that doesn't support metrics
                 pass
