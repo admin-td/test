@@ -81,6 +81,16 @@ class Dialog(QtGui.QWidget):
 
         self._setup_playlist_dropdown()
 
+        engine = sgtk.platform.current_engine()
+        if engine is None:
+            return
+
+        self.publisher = engine.apps.get("tk-multi-publish2")
+        if self.publisher and not os.environ.get("SHOTGUN_DISABLE_POST_RENDER_PUBLISH"):
+            self.tk_multi_publish2 = self.publisher.import_module("tk_multi_publish2")
+
+        self.dialog_status = False
+
     def _setup_playlist_dropdown(self):
         """
         Sets up the playlist dropdown widget
@@ -345,17 +355,21 @@ class Dialog(QtGui.QWidget):
         """
         try:
             if self.ui.playlists.itemData(self.ui.playlists.currentIndex()) == 0:
-                # data["playlists"] = [
-                #     {
-                #         "type": "Playlist",
-                #         "id": self.ui.playlists.itemData(self.ui.playlists.currentIndex()),
-                #     }
-                # ]
                 nuke.message("You have to choose status!")
                 return
 
             self._overlay.start_spin()
-            self._version_id = self._run_submission()
+            res = nuke.ask(f"Is the status you selected is {self.ui.playlists.currentText()}?")
+            if res:
+                if self.status == 'pub':
+                    self.tk_multi_publish2.show_dialog(self.publisher)
+                    self.dialog_status = self.tk_multi_publish2.is_completed(self.dialog_status)
+                    if self.dialog_status:
+                        self.close()
+                else:
+                    self._version_id = self._run_submission()
+            else:
+                self.close()
         except Exception as e:
             logger.exception("An exception was raised.")
             self._overlay.show_error_message("An error was reported: %s" % e)

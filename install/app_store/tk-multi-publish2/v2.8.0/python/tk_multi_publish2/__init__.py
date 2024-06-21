@@ -26,7 +26,6 @@ def show_dialog(app):
     from .dialog import AppDialog
 
     display_name = sgtk.platform.current_bundle().get_setting("display_name")
-
     if app.pre_publish_hook.validate():
         # start ui
         if app.modal:
@@ -38,3 +37,7 @@ def show_dialog(app):
             "%s validate returned False -- abort publish."
             % app.pre_publish_hook.__class__.__name__
         )
+
+
+def is_completed(boolean):
+    return not boolean
