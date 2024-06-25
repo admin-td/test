@@ -184,10 +184,10 @@ settings.tk-nuke.shot_step:
     tk-nuke-writenode: "@settings.tk-nuke-writenode.shot"
   menu_favourites:
   - {app_instance: tk-multi-workfiles2, name: File Open...}
-  - {app_instance: tk-multi-snapshot, name: Snapshot...}
+#  - {app_instance: tk-multi-snapshot, name: Snapshot...}
   - {app_instance: tk-multi-workfiles2, name: File Save...}
-  - {app_instance: tk-multi-publish2, name: Publish...}
-  - {app_instance: tk-multi-breakdown2, name: Scene Breakdown...}
+#  - {app_instance: tk-multi-publish2, name: Publish...}
+#  - {app_instance: tk-multi-breakdown2, name: Scene Breakdown...}
   location: "@engines.tk-nuke.location"
 
 ################################################################################
