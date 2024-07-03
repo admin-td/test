@@ -12,8 +12,6 @@ import os
 from datetime import datetime
 import copy
 import re
-import time
-import nuke
 
 import sgtk
 from sgtk.platform.qt import QtCore
@@ -247,7 +245,7 @@ class FileFinder(QtCore.QObject):
     def read_notepad(file_path):
         try:
             with open(file_path, 'r') as file:
-                content = file.read()  # 파일 내용을 읽어옴
+                content = file.read()
             return content
         except:
             pass

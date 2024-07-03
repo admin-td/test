@@ -832,6 +832,11 @@ class FileSaveForm(FileFormBase):
                 task_id = self._current_env.context.task['id']
                 field_name = 'sg_modified_by'
                 new_data = ['version_' + str(version) + ' by_' + self._current_env.context.user['name']]
+
+                if version == 1:
+                    status_data = {'sg_status_list': 'wip'}
+                    sg.update('Task', task_id, status_data)
+
                 field_value = self.get_task_field_value(sg, task_id, field_name) or ""
                 sg_data = self.add_versions(field_value, new_data)
 

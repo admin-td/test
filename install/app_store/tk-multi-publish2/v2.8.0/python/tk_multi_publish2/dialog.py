@@ -1295,7 +1295,7 @@ class AppDialog(QtGui.QWidget):
             try:
                 self._bundle.log_metric("Published")
 
-                config_path = r'X:\ShotGrid_Test_jw\Project\config_jw3'
+                config_path = r'X:\ShotGrid_Test_jw\Project\config_test'
                 tk = sgtk.sgtk_from_path(config_path)
                 sg = tk.shotgun
                 task_id = None

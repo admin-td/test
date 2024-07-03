@@ -252,7 +252,6 @@ configuration:
         values:
           type: str
         default_value: ['All', 'Working', 'Publishes']
-#        default_value: ['All', 'Publishes']
 
     show_check_references_option:
         type: bool
