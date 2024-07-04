@@ -190,6 +190,25 @@ background-color: rgb(255, 128, 0);
          </property>
         </widget>
        </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="time_label">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Working time:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+         <property name="indent">
+          <number>-1</number>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QLabel" name="name_label">
          <property name="minimumSize">
@@ -209,7 +228,7 @@ background-color: rgb(255, 128, 0);
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="file_type_label">
          <property name="minimumSize">
           <size>
@@ -265,7 +284,7 @@ background-color: rgb(255, 128, 0);
          </item>
         </layout>
        </item>
-       <item row="2" column="1">
+       <item row="3" column="1">
         <layout class="QHBoxLayout" name="horizontalLayout_6">
          <property name="spacing">
           <number>0</number>
@@ -336,6 +355,46 @@ background-color: rgb(255, 128, 0);
        </item>
       </layout>
      </item>
+
+     <item row="2" column="1">
+        <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="1,0">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="time_edit">
+           <property name="maximumSize">
+            <size>
+             <width>200</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="accessibleName">
+            <string>Time Edit</string>
+           </property>
+           <property name="frame">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+
      <item>
       <widget class="QStackedWidget" name="feedback_stacked_widget">
        <property name="currentIndex">
@@ -587,6 +646,7 @@ background-color: rgb(255, 128, 0);
   <tabstop>name_edit</tabstop>
   <tabstop>version_spinner</tabstop>
   <tabstop>use_next_available_cb</tabstop>
+  <tabstop>time_edit</tabstop>
   <tabstop>file_type_menu</tabstop>
   <tabstop>cancel_btn</tabstop>
   <tabstop>save_btn</tabstop>

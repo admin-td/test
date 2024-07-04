@@ -16,7 +16,10 @@ the list of current work files.
 
 import os
 import traceback
+import re
+import nuke
 from itertools import chain
+from datetime import datetime
 
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
@@ -126,6 +129,8 @@ class FileSaveForm(FileFormBase):
         self._ui.use_next_available_cb.setChecked(True)
         self._ui.version_spinner.setEnabled(False)
         self._ui.name_edit.setEnabled(False)
+        self._ui.time_label.setVisible(False)
+        self._ui.time_edit.setVisible(False)
 
         # hook up signals on controls:
         self._ui.save_btn.clicked.connect(self._on_save)
@@ -230,6 +235,9 @@ class FileSaveForm(FileFormBase):
         # get the name, version and extension from the UI:
         name = value_to_str(self._ui.name_edit.text())
         version = self._ui.version_spinner.value()
+        if version:
+            self._ui.time_label.setVisible(True)
+            self._ui.time_edit.setVisible(True)
         use_next_version = self._ui.use_next_available_cb.isChecked()
         ext_idx = self._ui.file_type_menu.currentIndex()
         ext = self._extension_choices[ext_idx] if ext_idx >= 0 else ""
@@ -550,6 +558,7 @@ class FileSaveForm(FileFormBase):
                 name = self._current_env.context.entity['name'] + '_comp'
 
             self._ui.name_edit.setText(name)
+        self._ui.time_edit.setText('00:00')
 
         if ext_is_used:
             # update extension menu:
@@ -723,6 +732,19 @@ class FileSaveForm(FileFormBase):
             use_next_version = self._ui.use_next_available_cb.isChecked()
             ext_idx = self._ui.file_type_menu.currentIndex()
             ext = self._extension_choices[ext_idx] if ext_idx >= 0 else ""
+            time = self._ui.time_edit.text()
+
+            if version != 1:
+                if re.match(r'^\d{2}:\d{2}$', time):
+                    hours, minutes = map(int, time.split(':'))
+                    if 0 <= hours < 24 and 0 <= minutes < 60:
+                        pass
+                    else:
+                        nuke.message('The time format is incorrect. (Valid time: 00:00 ~ 23:59)')
+                        return
+                else:
+                    nuke.message('The time format is incorrect. (Format: HH:MM)')
+                    return
 
             # now attempt to generate the path to save to:
             version_to_save = None
@@ -830,6 +852,23 @@ class FileSaveForm(FileFormBase):
                 sg = tk.shotgun
 
                 task_id = self._current_env.context.task['id']
+                project_id = self._current_env.context.project['id']
+                user_id = self._current_env.context.user['id']
+
+                if version != 1:
+                    hours, minutes = map(int, time.split(':'))
+                    duration = hours * 60 + minutes
+
+                    time_log_data = {
+                        'project': {'type': 'Project', 'id': project_id},
+                        'entity': {'type': 'Task', 'id': task_id},
+                        'duration': duration,
+                        'description': 'New Sample time log entry',
+                        'user': {'type': 'HumanUser', 'id': user_id},
+                        'date': datetime.now().strftime('%Y-%m-%d')
+                    }
+                    sg.create('TimeLog', time_log_data)
+
                 field_name = 'sg_modified_by'
                 new_data = ['version_' + str(version) + ' by_' + self._current_env.context.user['name']]
 
