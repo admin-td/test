@@ -52,6 +52,8 @@ class BaseLauncher(object):
             else "windows"
         )
 
+        self._inhouse_path = [r'X:\Inhouse\tool\tats.exe']
+
     def _register_launch_command(
         self,
         app_menu_name,
@@ -317,7 +319,7 @@ class BaseLauncher(object):
                  variables and/or the locally supported {version}, {v0},
                  {v1}, ... variables
         """
-        if self._tk_app.engine.has_ui:
+        if app_path not in self._inhouse_path and self._tk_app.engine.has_ui:
             from ..launch_indicator_dialog import populate_launch_dialog
 
             wid, dial = populate_launch_dialog(self._tk_app)
