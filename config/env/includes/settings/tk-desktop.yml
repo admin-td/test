@@ -17,6 +17,7 @@ includes:
 - ./tk-multi-launchapp.yml
 - ./tk-multi-publish2.yml
 - ./tk-multi-screeningroom.yml
+- ./tk-multi-inhouse.yml
 
 ################################################################################
 
@@ -37,8 +38,9 @@ settings.tk-desktop.project:
     tk-multi-launchhiero: "@settings.tk-multi-launchapp.hiero"
 #    tk-multi-launchmari: "@settings.tk-multi-launchapp.mari"
 #    tk-multi-launchmotionbuilder: "@settings.tk-multi-launchapp.motionbuilder"
-    tk-multi-launchinhouse: "@settings.tk-multi-launchapp.inhouse"
+#    tk-multi-launchinhouse: "@settings.tk-multi-launchapp.inhouse"
     tk-multi-publish2: "@settings.tk-multi-publish2.standalone"
+    tk-multi-inhouse: "@settings.tk-multi-inhouse.standalone"
     tk-multi-screeningroom: "@settings.tk-multi-screeningroom.rv"
   groups:
   - matches:
