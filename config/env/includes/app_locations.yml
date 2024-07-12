@@ -48,10 +48,10 @@ apps.tk-multi-loader2.location:
   type: app_store
   name: tk-multi-loader2
   version: v1.24.0
-apps.tk-multi-inhouse.location:
+apps.tk-multi-datamanager.location:
   type: app_store
-  name: tk-multi-inhouse
-  version: v2.8.0
+  name: tk-multi-datamanager
+  version: v1.0.0
 apps.tk-multi-publish2.location:
   type: app_store
   name: tk-multi-publish2
