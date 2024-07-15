@@ -48,18 +48,18 @@ class ProgressHandler(object):
         self._progress_bar = progress_bar
 
         self._icon_lookup = {
-            self.PHASE_LOAD: QtGui.QPixmap(":/tk_multi_datamanager/status_load.png"),
+            self.PHASE_LOAD: QtGui.QPixmap(":/tk_multi_publish2/status_load.png"),
             self.PHASE_VALIDATE: QtGui.QPixmap(
-                ":/tk_multi_datamanager/status_validate.png"
+                ":/tk_multi_publish2/status_validate.png"
             ),
-            self.PHASE_PUBLISH: QtGui.QPixmap(":/tk_multi_datamanager/status_publish.png"),
+            self.PHASE_PUBLISH: QtGui.QPixmap(":/tk_multi_publish2/status_publish.png"),
             self.PHASE_FINALIZE: QtGui.QPixmap(
-                ":/tk_multi_datamanager/status_success.png"
+                ":/tk_multi_publish2/status_success.png"
             ),
         }
 
-        self._icon_warning = QtGui.QPixmap(":/tk_multi_datamanager/status_warning.png")
-        self._icon_error = QtGui.QPixmap(":/tk_multi_datamanager/status_error.png")
+        self._icon_warning = QtGui.QPixmap(":/tk_multi_publish2/status_warning.png")
+        self._icon_error = QtGui.QPixmap(":/tk_multi_publish2/status_error.png")
 
         # These colors come from the HIG.
         self._debug_brush = QtGui.QBrush(QtGui.QColor("#88BC47"))  # green

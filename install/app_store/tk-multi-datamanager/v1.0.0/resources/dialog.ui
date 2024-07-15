@@ -100,7 +100,7 @@
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap resource="resources.qrc">:/tk_multi_datamanager/icon_256.png</pixmap>
+               <pixmap resource="resources.qrc">:/tk_multi_publish2/icon_256.png</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -223,7 +223,7 @@
                   </property>
                   <property name="icon">
                    <iconset resource="resources.qrc">
-                    <normaloff>:/tk_multi_datamanager/file.png</normaloff>:/tk_multi_datamanager/file.png</iconset>
+                    <normaloff>:/tk_multi_publish2/file.png</normaloff>:/tk_multi_publish2/file.png</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -275,7 +275,7 @@ image sequences</string>
                   </property>
                   <property name="icon">
                    <iconset resource="resources.qrc">
-                    <normaloff>:/tk_multi_datamanager/image_sequence.png</normaloff>:/tk_multi_datamanager/image_sequence.png</iconset>
+                    <normaloff>:/tk_multi_publish2/image_sequence.png</normaloff>:/tk_multi_publish2/image_sequence.png</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -344,7 +344,7 @@ image sequences</string>
                   </property>
                   <property name="icon">
                    <iconset resource="resources.qrc">
-                    <normaloff>:/tk_multi_datamanager/status_warning.png</normaloff>:/tk_multi_datamanager/status_warning.png</iconset>
+                    <normaloff>:/tk_multi_publish2/status_warning.png</normaloff>:/tk_multi_publish2/status_warning.png</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -1090,7 +1090,7 @@ Please select a single task.</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/tk_multi_datamanager/browse_menu.png</normaloff>:/tk_multi_datamanager/browse_menu.png</iconset>
+                 <normaloff>:/tk_multi_publish2/browse_menu.png</normaloff>:/tk_multi_publish2/browse_menu.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1116,7 +1116,7 @@ Please select a single task.</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/tk_multi_datamanager/refresh.png</normaloff>:/tk_multi_datamanager/refresh.png</iconset>
+                 <normaloff>:/tk_multi_publish2/refresh.png</normaloff>:/tk_multi_publish2/refresh.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1142,7 +1142,7 @@ Please select a single task.</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/tk_multi_datamanager/trash.png</normaloff>:/tk_multi_datamanager/trash.png</iconset>
+                 <normaloff>:/tk_multi_publish2/trash.png</normaloff>:/tk_multi_publish2/trash.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1168,7 +1168,7 @@ Please select a single task.</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/tk_multi_datamanager/expand.png</normaloff>:/tk_multi_datamanager/expand.png</iconset>
+                 <normaloff>:/tk_multi_publish2/expand.png</normaloff>:/tk_multi_publish2/expand.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1194,7 +1194,7 @@ Please select a single task.</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/tk_multi_datamanager/contract.png</normaloff>:/tk_multi_datamanager/contract.png</iconset>
+                 <normaloff>:/tk_multi_publish2/contract.png</normaloff>:/tk_multi_publish2/contract.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1226,7 +1226,7 @@ Please select a single task.</string>
                </property>
                <property name="icon">
                 <iconset resource="resources.qrc">
-                 <normaloff>:/tk_multi_datamanager/help.png</normaloff>:/tk_multi_datamanager/help.png</iconset>
+                 <normaloff>:/tk_multi_publish2/help.png</normaloff>:/tk_multi_publish2/help.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1273,7 +1273,7 @@ Please select a single task.</string>
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap resource="resources.qrc">:/tk_multi_datamanager/status_success.png</pixmap>
+             <pixmap resource="resources.qrc">:/tk_multi_publish2/status_success.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1303,7 +1303,7 @@ Please select a single task.</string>
             </property>
             <property name="icon">
              <iconset resource="resources.qrc">
-              <normaloff>:/tk_multi_datamanager/cross.png</normaloff>:/tk_multi_datamanager/cross.png</iconset>
+              <normaloff>:/tk_multi_publish2/cross.png</normaloff>:/tk_multi_publish2/cross.png</iconset>
             </property>
             <property name="iconSize">
              <size>

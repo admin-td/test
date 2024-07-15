@@ -37,7 +37,7 @@ class Ui_ProgressDetailsWidget(object):
         self.close.setMaximumSize(QtCore.QSize(30, 30))
         self.close.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/tk_multi_datamanager/cross.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/tk_multi_publish2/cross.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.close.setIcon(icon)
         self.close.setIconSize(QtCore.QSize(30, 30))
         self.close.setObjectName("close")

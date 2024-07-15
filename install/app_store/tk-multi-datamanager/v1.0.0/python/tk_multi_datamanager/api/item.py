@@ -702,7 +702,7 @@ class PublishItem(object):
             get_pixmap=lambda: self._icon_pixmap,
             set_pixmap=lambda pixmap: setattr(self, "_icon_pixmap", pixmap),
             get_parent_pixmap=lambda: self.parent.icon,
-            default_image_path=":/tk_multi_datamanager/item.png",
+            default_image_path=":/tk_multi_publish2/item.png",
         )
 
     def _get_image(

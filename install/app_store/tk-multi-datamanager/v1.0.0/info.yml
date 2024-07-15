@@ -17,7 +17,7 @@ configuration:
 
     display_action_name:
         type: str
-        default_value: Data Manager
+        default_value: Publish
         description: "Shorter version of display_name setting, used as button name."
 
     collector:

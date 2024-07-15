@@ -74,7 +74,7 @@
          <string>task icon</string>
         </property>
         <property name="pixmap">
-         <pixmap resource="resources.qrc">:/tk_multi_datamanager/shotgun.png</pixmap>
+         <pixmap resource="resources.qrc">:/tk_multi_publish2/shotgun.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -131,7 +131,7 @@
         </property>
         <property name="icon">
          <iconset resource="resources.qrc">
-          <normaloff>:/tk_multi_datamanager/status_publish.png</normaloff>:/tk_multi_datamanager/status_publish.png</iconset>
+          <normaloff>:/tk_multi_publish2/status_publish.png</normaloff>:/tk_multi_publish2/status_publish.png</iconset>
         </property>
         <property name="iconSize">
          <size>

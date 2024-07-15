@@ -29,7 +29,7 @@ class Ui_SummaryWidget(object):
         self.icon.setMinimumSize(QtCore.QSize(32, 32))
         self.icon.setMaximumSize(QtCore.QSize(30, 30))
         self.icon.setText("")
-        self.icon.setPixmap(QtGui.QPixmap(":/tk_multi_datamanager/icon_256.png"))
+        self.icon.setPixmap(QtGui.QPixmap(":/tk_multi_publish2/icon_256.png"))
         self.icon.setScaledContents(True)
         self.icon.setObjectName("icon")
         self.horizontalLayout.addWidget(self.icon)

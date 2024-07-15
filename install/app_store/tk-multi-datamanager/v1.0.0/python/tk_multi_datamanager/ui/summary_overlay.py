@@ -42,7 +42,7 @@ class Ui_SummaryOverlay(object):
         self.icon = QtGui.QLabel(self.summary_frame)
         self.icon.setMaximumSize(QtCore.QSize(80, 80))
         self.icon.setText("")
-        self.icon.setPixmap(QtGui.QPixmap(":/tk_multi_datamanager/publish_complete.png"))
+        self.icon.setPixmap(QtGui.QPixmap(":/tk_multi_publish2/publish_complete.png"))
         self.icon.setScaledContents(True)
         self.icon.setObjectName("icon")
         self.horizontalLayout.addWidget(self.icon)

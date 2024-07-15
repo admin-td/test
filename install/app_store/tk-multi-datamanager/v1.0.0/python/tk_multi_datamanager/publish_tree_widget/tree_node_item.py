@@ -34,8 +34,8 @@ class TreeNodeItem(TreeNodeBase):
         self.setFlags(self.flags() | QtCore.Qt.ItemIsSelectable)
 
         # go ahead and keep a handle on these so they can be reused
-        self._expanded_icon = QtGui.QIcon(":/tk_multi_datamanager/down_arrow.png")
-        self._collapsed_icon = QtGui.QIcon(":/tk_multi_datamanager/right_arrow.png")
+        self._expanded_icon = QtGui.QIcon(":/tk_multi_publish2/down_arrow.png")
+        self._collapsed_icon = QtGui.QIcon(":/tk_multi_publish2/right_arrow.png")
 
         self._inherit_description = True
 

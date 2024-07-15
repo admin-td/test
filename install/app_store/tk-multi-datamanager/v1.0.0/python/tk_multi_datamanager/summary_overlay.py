@@ -59,7 +59,7 @@ class SummaryOverlay(QtGui.QWidget):
         Shows a special message when there is no items collected under an alternate
         UI operation determined by the 'enable_manual_load' application option.
         """
-        self.ui.icon.setPixmap(QtGui.QPixmap(":/tk_multi_datamanager/publish_failed.png"))
+        self.ui.icon.setPixmap(QtGui.QPixmap(":/tk_multi_publish2/publish_failed.png"))
         # Hardcoding line break so the message displays on 2 lines.
         # Usage of label's own word wrap displays the message below on 3 lines.
         # NOTE: Can't manually break line when using <p></p>
@@ -73,7 +73,7 @@ class SummaryOverlay(QtGui.QWidget):
         Shows standard "publish completed successfully!" prompt
         """
         self.ui.icon.setPixmap(
-            QtGui.QPixmap(":/tk_multi_datamanager/publish_complete.png")
+            QtGui.QPixmap(":/tk_multi_publish2/publish_complete.png")
         )
         self.ui.label.setText("Publish\nComplete")
         self.ui.info.setText("For more details, <b><u>click here</u></b>.")
@@ -87,7 +87,7 @@ class SummaryOverlay(QtGui.QWidget):
         """
         Shows standard "publish failed!" prompt
         """
-        self.ui.icon.setPixmap(QtGui.QPixmap(":/tk_multi_datamanager/publish_failed.png"))
+        self.ui.icon.setPixmap(QtGui.QPixmap(":/tk_multi_publish2/publish_failed.png"))
         self.ui.label.setText("Publish\nFailed!")
         self.ui.info.setText("For more details, <b><u>click here</u></b>.")
 
@@ -100,7 +100,7 @@ class SummaryOverlay(QtGui.QWidget):
         """
         Shows standard "loading stuff" prompt
         """
-        self.ui.icon.setPixmap(QtGui.QPixmap(":/tk_multi_datamanager/overlay_loading.png"))
+        self.ui.icon.setPixmap(QtGui.QPixmap(":/tk_multi_publish2/overlay_loading.png"))
         self.ui.label.setText("Loading and processing")
         self.ui.info.setText("Hold tight while we analyze your data")
 
