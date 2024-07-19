@@ -15,6 +15,7 @@ import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from tank_vendor import six
 import sys
+import subprocess
 
 from .api import PublishManager, PublishItem, PublishTask
 from .ui.dialog import Ui_Dialog
@@ -46,6 +47,7 @@ shotgun_globals = sgtk.platform.import_framework(
 
 logger = sgtk.platform.get_logger(__name__)
 
+
 class CheckableItem(QtGui.QStandardItem):
     def __init__(self, text=''):
         super().__init__(text)
@@ -75,7 +77,6 @@ class AppDialog(QtGui.QWidget):
         """
         QtGui.QWidget.__init__(self, parent)
 
-        self._checked_items = []
         # create a settings manager where we can pull and push prefs later
         # prefs in this manager are shared
         self._settings_manager = settings.UserSettings(sgtk.platform.current_bundle())
@@ -107,10 +108,10 @@ class AppDialog(QtGui.QWidget):
         self.ui.check_button.clicked.connect(self._check_all_items)
         self.ui.uncheck_button.clicked.connect(self._uncheck_all_items)
         self.ui.excel_open_button.clicked.connect(self._on_excel_browse)
-        self.ui.pushButton_7.clicked.connect(lambda: self._on_drop(self._checked_items))
+        self.ui.pushButton_7.clicked.connect(self._on_drop)
+        self.ui.scan_button.clicked.connect(self._event_listener)
 
         self.ui.browse_button.setIcon(QtGui.QIcon(icon_path))
-
 
         # only allow entities that can be linked to PublishedFile entities
         self.ui.context_widget.restrict_entity_types_by_link("PublishedFile", "entity")
@@ -875,10 +876,21 @@ class AppDialog(QtGui.QWidget):
         # reset the validation flag
         self._validation_run = False
 
-    def _on_drop(self, files):
+    def _on_drop(self):
         """
         When someone drops stuff into the publish.
         """
+        checked_item_paths = []
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if item.checkState() == QtCore.Qt.Checked:
+                for root, _, files in os.walk(item.text()):
+                    if files[0].endswith('.mov'):
+                        for file in files:
+                            checked_item_paths.append(root+'\\'+file)
+                    else:
+                        checked_item_paths.append(item.text())
+
 
         # Short circuiting method disabling actual action performed on dropping to the target.
         if not self.manual_load_enabled:
@@ -890,7 +902,7 @@ class AppDialog(QtGui.QWidget):
         self._progress_handler.push("Processing external files...")
 
         # pyside gives us back unicode. Make sure we convert it to strings
-        str_files = [six.ensure_str(f) for f in files]
+        str_files = [six.ensure_str(f) for f in checked_item_paths]
 
         try:
             self.ui.main_stack.setCurrentIndex(self.PUBLISH_SCREEN)
@@ -902,6 +914,7 @@ class AppDialog(QtGui.QWidget):
             self._overlay.show_loading()
             self.ui.button_container.hide()
             new_items = self._publish_manager.collect_files(str_files)
+            logger.info(f"test :  {new_items}")
             num_items_created = len(new_items)
             num_errors = self._progress_handler.pop()
 
@@ -1288,35 +1301,8 @@ class AppDialog(QtGui.QWidget):
             )
             self._overlay.show_fail()
         else:
-
             # Publish succeeded
             # Log the toolkit "Published" metric
-            try:
-                self._bundle.log_metric("Published")
-
-                config_path = r'X:\ShotGrid_Test_jw\Project\config_test'
-                tk = sgtk.sgtk_from_path(config_path)
-                sg = tk.shotgun
-                task_id = None
-
-                data = {
-                    'sg_status_list': 'pub'
-                }
-
-                current_engine = sgtk.platform.current_engine()
-                context = current_engine.context
-
-                if context.task and context.task['type'] == 'Task':
-                    task_id = context.task['id']
-                else:
-                    pass
-
-                sg.update('Task', task_id, data)
-
-            except:
-                # ignore all errors. ex: using a core that doesn't support metrics
-                pass
-
             self._progress_handler.logger.info(
                 "Publish Complete! For details, click here."
             )
@@ -1580,6 +1566,65 @@ class AppDialog(QtGui.QWidget):
         # Make the task validation if the setting `task_required` exists and it's True
         self._validate_task_required()
 
+    def get_exr_format(self,file_path):
+        import nuke
+        temp_node = nuke.createNode('Read', inpanel=False)
+        temp_node['file'].setValue(file_path)
+        width = temp_node.width()
+        height = temp_node.height()
+        nuke.delete(temp_node)
+        return width, height
+
+    def _run_nuke_script(self,script_path):
+        """
+        This function runs the mode for placing Nuke files.
+
+        :param script_path: File path to the Nuke script to run
+        """
+        # Nuke executable path (may vary depending on your system)
+        nuke_executable = r"X:/Inhouse/Nuke15.0v4/Nuke15.0.exe"
+
+        # Command to run Nuke script in batch mode
+        command = [nuke_executable, '-x', script_path]
+        # command = [nuke_executable, '-t', '--execute-nodes', 'Read', '-x', script_path]
+        try:
+            # Run Nuke scripts and capture real-time output
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            # Read standard output and standard error in real time and record them as logs
+            for stdout_line in iter(process.stdout.readline, ""):
+                logger.info(stdout_line.strip())
+            for stderr_line in iter(process.stderr.readline, ""):
+                logger.error(stderr_line.strip())
+
+            # Wait for the process to terminate
+            process.stdout.close()
+            process.stderr.close()
+            return_code = process.wait()
+
+            if return_code == 0:
+                logger.info("Nuke script run successfully.")
+            else:
+                logger.error(f"Error running Nuke script. return code: {return_code}")
+
+        except subprocess.CalledProcessError as e:
+            # Log when an error occurs
+            logger.error(f"An error occurred: {e}")
+    def _event_listener(self):
+        """
+        A function that detects specific events.
+        Here, we simulate an event with a conditional statement.
+        """
+        # Here, define the conditions for event occurrence
+        event_occurred = True
+
+        if event_occurred:
+            logger.info("Event occurred! Run the Nuke script.")
+            nuke_script_path = r"X:/Inhouse/Nuke15.0v4/color_script.py"
+            self._run_nuke_script(nuke_script_path)
+        else:
+            logger.info("No event occurred.")
+
     def _on_browse(self, folders=False):
         """Opens a file dialog to browse to files for publishing."""
 
@@ -1627,31 +1672,33 @@ class AppDialog(QtGui.QWidget):
         if paths:
             # simulate dropping the files into the dialog
             self.ui.lineEdit.setText(str(paths[0]))
-            for path in paths:
-                self._add_folder_to_list(path)
+            self._add_folder_to_list(str(paths[0]))
 
     def _add_folder_to_list(self, folder_path):
-        for root, _, files in os.walk(folder_path):
-            for file in files:
-                full_path = os.path.join(root, file).replace("\\", "/")
-                self._add_file_to_list(full_path)
+        subfolder_paths = [f.path for f in os.scandir(folder_path) if f.is_dir()]
+        for subfolder_path in subfolder_paths:
+            subfolder_path = subfolder_path.replace("\\", "/")
+            self._add_file_to_list(subfolder_path)
 
     def _add_file_to_list(self, file_path):
         item = CheckableItem(file_path)
         self.model.appendRow(item)
 
     def _save_checked_items_to_excel(self):
+        checked_item_paths = []
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
             if item.checkState() == QtCore.Qt.Checked:
-                self._checked_items.append(item.text())
+                for root, _, files in os.walk(item.text()):
+                    logger.info(f"test :  {root} + {files}")
+                checked_item_paths.append(item.text())
 
-        if self._checked_items:
+        if checked_item_paths:
             workbook = Workbook()
             sheet = workbook.active
             sheet.title = "Checked Items"
 
-            for idx, item in enumerate(self._checked_items, start=1):
+            for idx, item in enumerate(checked_item_paths, start=1):
                 sheet[f'A{idx}'] = item
 
             save_path = self._get_save_path(self._default_directory_path)
