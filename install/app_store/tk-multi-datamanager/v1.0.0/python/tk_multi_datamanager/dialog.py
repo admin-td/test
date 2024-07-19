@@ -24,8 +24,10 @@ from .progress import ProgressHandler
 from .summary_overlay import SummaryOverlay
 from .publish_tree_widget import TreeNodeItem, TreeNodeTask, TopLevelTreeNodeItem
 
-icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
+browse_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
              r"\browse.png")
+scan_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
+             r"\browse_menu.png")
 venv_path = r'X:\Inhouse\Python\.venv\Lib\site-packages'
 sys.path.append(venv_path)
 
@@ -92,6 +94,7 @@ class AppDialog(QtGui.QWidget):
         self._bundle = sgtk.platform.current_bundle()
         self._validation_run = False
         self._default_directory_path = "X:/ShotGrid_Test_jw/Project/" + self._bundle.context.project.get("name", "Undefined") + '/scan'
+        self._default_config_path = self._bundle.sgtk.configuration_descriptor.get_path() + r'\install\app_store\tk-multi-datamanager\v1.0.0\python\tk_multi_datamanager\color_space.py'
         self._paths = None
 
         # set up the UI
@@ -111,7 +114,8 @@ class AppDialog(QtGui.QWidget):
         self.ui.pushButton_7.clicked.connect(self._on_drop)
         self.ui.scan_button.clicked.connect(self._event_listener)
 
-        self.ui.browse_button.setIcon(QtGui.QIcon(icon_path))
+        self.ui.browse_button.setIcon(QtGui.QIcon(browse_icon_path))
+        self.ui.scan_button.setIcon(QtGui.QIcon(scan_icon_path))
 
         # only allow entities that can be linked to PublishedFile entities
         self.ui.context_widget.restrict_entity_types_by_link("PublishedFile", "entity")
@@ -1610,6 +1614,33 @@ class AppDialog(QtGui.QWidget):
         except subprocess.CalledProcessError as e:
             # Log when an error occurs
             logger.error(f"An error occurred: {e}")
+
+        mov_path = r'X:/ShotGrid_Test_jw/Project/test/scan/240715/rendered_output.mov'
+        jpg_path = r'X:/ShotGrid_Test_jw/Project/test/scan/240715/thumbnail.jpg'
+
+        # Edit with full path to FFmpeg
+        ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
+
+        logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
+
+        # FFmpeg command settings
+        ffmpeg_command = [
+            ffmpeg_executable,
+            '-i', mov_path,  # input file
+            '-vf', 'select=eq(n\,0)',  # Select first frame
+            '-q:v', '2',  # Output quality (0 is highest quality, 31 is lowest quality)
+            '-frames:v', '1',  # Extract only one frame
+            jpg_path  # output file
+        ]
+        try:
+            logger.info(f"Run the FFmpeg command: {' '.join(ffmpeg_command)}")
+            subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
+            logger.info("FFmpeg command execution completed.")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error occurred while executing FFmpeg command: {e}")
+        # Log output - end of execution
+        logger.info("Exit Nuke batch mode execution.")
+
     def _event_listener(self):
         """
         A function that detects specific events.
@@ -1620,8 +1651,7 @@ class AppDialog(QtGui.QWidget):
 
         if event_occurred:
             logger.info("Event occurred! Run the Nuke script.")
-            nuke_script_path = r"X:/Inhouse/Nuke15.0v4/color_script.py"
-            self._run_nuke_script(nuke_script_path)
+            self._run_nuke_script(self._default_config_path)
         else:
             logger.info("No event occurred.")
 
