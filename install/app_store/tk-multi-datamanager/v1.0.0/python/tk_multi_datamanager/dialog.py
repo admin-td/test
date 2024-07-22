@@ -7,6 +7,7 @@
 # By accessing, using, copying or modifying this work you indicate your
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
+import json
 import os
 import traceback
 import re
@@ -94,7 +95,7 @@ class AppDialog(QtGui.QWidget):
         self._bundle = sgtk.platform.current_bundle()
         self._validation_run = False
         self._default_directory_path = "X:/ShotGrid_Test_jw/Project/" + self._bundle.context.project.get("name", "Undefined") + '/scan'
-        self._default_config_path = self._bundle.sgtk.configuration_descriptor.get_path() + r'\install\app_store\tk-multi-datamanager\v1.0.0\python\tk_multi_datamanager\color_space.py'
+        self._default_config_path = self._bundle.sgtk.configuration_descriptor.get_path() + r'\install\app_store\tk-multi-datamanager\v1.0.0\python\tk_multi_datamanager\batch_render.py'
         self._paths = None
 
         # set up the UI
@@ -1588,9 +1589,23 @@ class AppDialog(QtGui.QWidget):
         # Nuke executable path (may vary depending on your system)
         nuke_executable = r"X:/Inhouse/Nuke15.0v4/Nuke15.0.exe"
 
+        checked_item_paths = []
+        temp_paths = []
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row)
+            if item.checkState() == QtCore.Qt.Checked:
+                for root, _, files in os.walk(item.text()):
+                    if files[0].endswith('.mov'):
+                        for file in files:
+                            checked_item_paths.append(root+'\\'+file)
+                    else:
+                        checked_item_paths.append(item.text())
+                        temp_paths.append(item.text())
+
+        os.environ['TEMP_PATH'] = json.dumps(temp_paths)
+
         # Command to run Nuke script in batch mode
-        command = [nuke_executable, '-x', script_path]
-        # command = [nuke_executable, '-t', '--execute-nodes', 'Read', '-x', script_path]
+        command = [nuke_executable, '-t', script_path]
         try:
             # Run Nuke scripts and capture real-time output
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -1615,31 +1630,39 @@ class AppDialog(QtGui.QWidget):
             # Log when an error occurs
             logger.error(f"An error occurred: {e}")
 
-        mov_path = r'X:/ShotGrid_Test_jw/Project/test/scan/240715/rendered_output.mov'
-        jpg_path = r'X:/ShotGrid_Test_jw/Project/test/scan/240715/thumbnail.jpg'
+        for checked_item_path in checked_item_paths:
 
-        # Edit with full path to FFmpeg
-        ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
+            if checked_item_path.endswith('.mov'):
+                checked_item_path = checked_item_path.replace('\\', '/')
+                mov_directory_path, mov_file_path = os.path.split(checked_item_path)
+                mov_path = checked_item_path
+                jpg_path = mov_directory_path + '/' + mov_file_path + '_thumbnail.jpg'
+            else:
+                mov_path = checked_item_path + '/rendered_output.mov'
+                jpg_path = checked_item_path + '/thumbnail.jpg'
 
-        logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
+            # Edit with full path to FFmpeg
+            ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
 
-        # FFmpeg command settings
-        ffmpeg_command = [
-            ffmpeg_executable,
-            '-i', mov_path,  # input file
-            '-vf', 'select=eq(n\,0)',  # Select first frame
-            '-q:v', '2',  # Output quality (0 is highest quality, 31 is lowest quality)
-            '-frames:v', '1',  # Extract only one frame
-            jpg_path  # output file
-        ]
-        try:
-            logger.info(f"Run the FFmpeg command: {' '.join(ffmpeg_command)}")
-            subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
-            logger.info("FFmpeg command execution completed.")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Error occurred while executing FFmpeg command: {e}")
-        # Log output - end of execution
-        logger.info("Exit Nuke batch mode execution.")
+            logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
+
+            # FFmpeg command settings
+            ffmpeg_command = [
+                ffmpeg_executable,
+                '-i', mov_path,  # input file
+                '-vf', 'select=eq(n\,0)',  # Select first frame
+                '-q:v', '2',  # Output quality (0 is highest quality, 31 is lowest quality)
+                '-frames:v', '1',  # Extract only one frame
+                jpg_path  # output file
+            ]
+            try:
+                logger.info(f"Run the FFmpeg command: {' '.join(ffmpeg_command)}")
+                subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
+                logger.info("FFmpeg command execution completed.")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Error occurred while executing FFmpeg command: {e}")
+            # Log output - end of execution
+            logger.info("Exit Nuke batch mode execution.")
 
     def _event_listener(self):
         """
@@ -1720,7 +1743,7 @@ class AppDialog(QtGui.QWidget):
             item = self.model.item(row)
             if item.checkState() == QtCore.Qt.Checked:
                 for root, _, files in os.walk(item.text()):
-                    logger.info(f"test :  {root} + {files}")
+                    logger.info(f"file : {root}")
                 checked_item_paths.append(item.text())
 
         if checked_item_paths:
