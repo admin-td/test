@@ -1,3 +1,6 @@
+import subprocess
+
+
 def get_exr_format(file_path):
     temp_node = nuke.createNode('Read', inpanel=False)
     temp_node['file'].setValue(file_path)
@@ -51,17 +54,25 @@ if __name__ == '__main__':
 
             write_node = nuke.createNode('Write')
 
-            # 숨겨진 파일 만들고 여기에 넣기
-            output_path = folder_path + '/rendered_output.mov'
+            temp_folder_path = os.path.join(folder_path, 'temp')
+            temp_folder_path = temp_folder_path.replace('\\', '/')
+            if not os.path.exists(temp_folder_path):
+                os.makedirs(temp_folder_path)
+                subprocess.call(['attrib', '+h', temp_folder_path])
+            prefix = prefix[:-1]
+            new_output_path = os.path.join(temp_folder_path, f'{prefix}.mov')
+            new_output_path = new_output_path.replace('\\', '/')
 
-            # 이미 만들어진 파일에 mov 파일이 있으면 render 하지 않음
-            write_node['file'].setValue(output_path)
+            if os.path.isfile(new_output_path):
+                print(f'This file({new_output_path}) is already exists.')
+            else:
+                write_node['file'].setValue(new_output_path)
 
-            write_node['file_type'].setValue('mov')
+                write_node['file_type'].setValue('mov')
 
-            write_node.setInput(0, read_node)
-            nuke.execute(write_node, first_frame, last_frame)
+                write_node.setInput(0, read_node)
+                nuke.execute(write_node, first_frame, last_frame)
 
-            print(f"Read node created for sequence: {sequence_path}")
-            print(f"Original range set to: {first_frame} - {last_frame}")
+                print(f"Read node created for sequence: {sequence_path}")
+                print(f"Original range set to: {first_frame} - {last_frame}")
 

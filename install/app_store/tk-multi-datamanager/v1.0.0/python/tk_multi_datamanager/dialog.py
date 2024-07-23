@@ -1580,89 +1580,148 @@ class AppDialog(QtGui.QWidget):
         nuke.delete(temp_node)
         return width, height
 
-    def _run_nuke_script(self,script_path):
+    def _run_nuke_script(self, script_path):
         """
         This function runs the mode for placing Nuke files.
 
         :param script_path: File path to the Nuke script to run
         """
-        # Nuke executable path (may vary depending on your system)
         nuke_executable = r"X:/Inhouse/Nuke15.0v4/Nuke15.0.exe"
+
+        checked_item_paths = self._get_checked_item_paths()
+        command = [nuke_executable, '-t', script_path]
+        self._run_subprocess(command)
+
+        for path in checked_item_paths:
+            mov_path, jpg_path = self._determine_paths(path)
+            if mov_path and jpg_path:
+                self._extract_frame_as_jpg(mov_path, jpg_path)
+
+        logger.info("Exit Nuke batch mode execution.")
+
+    def _get_checked_item_paths(self):
+        """
+        Get the paths of the checked items in the model.
+        """
 
         checked_item_paths = []
         temp_paths = []
+
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
             if item.checkState() == QtCore.Qt.Checked:
                 for root, _, files in os.walk(item.text()):
-                    if files[0].endswith('.mov'):
-                        for file in files:
-                            checked_item_paths.append(root+'\\'+file)
-                    else:
+                    if files[0].endswith('.exr') or files[0].endswith('.dpx'):
                         checked_item_paths.append(item.text())
                         temp_paths.append(item.text())
-
+                    else:
+                        for file in files:
+                            mov_path = os.path.join(root, file)
+                            mov_path = mov_path.replace('\\', '/')
+                            checked_item_paths.append(mov_path)
         os.environ['TEMP_PATH'] = json.dumps(temp_paths)
 
-        # Command to run Nuke script in batch mode
-        command = [nuke_executable, '-t', script_path]
-        try:
-            # Run Nuke scripts and capture real-time output
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return checked_item_paths
 
-            # Read standard output and standard error in real time and record them as logs
+    @staticmethod
+    def _run_subprocess(command):
+        """
+        Run a subprocess command and log its output.
+        """
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for stdout_line in iter(process.stdout.readline, ""):
                 logger.info(stdout_line.strip())
             for stderr_line in iter(process.stderr.readline, ""):
                 logger.error(stderr_line.strip())
-
-            # Wait for the process to terminate
             process.stdout.close()
             process.stderr.close()
             return_code = process.wait()
-
             if return_code == 0:
                 logger.info("Nuke script run successfully.")
             else:
-                logger.error(f"Error running Nuke script. return code: {return_code}")
-
+                logger.error(f"Error running Nuke script. Return code: {return_code}")
         except subprocess.CalledProcessError as e:
-            # Log when an error occurs
             logger.error(f"An error occurred: {e}")
 
-        for checked_item_path in checked_item_paths:
+    @staticmethod
+    def _determine_paths(path):
+        """
+        Determine the MOV and JPG paths based on the given path.
+        """
+        temp_folder_path = path + '/temp'
 
-            if checked_item_path.endswith('.mov'):
-                checked_item_path = checked_item_path.replace('\\', '/')
-                mov_directory_path, mov_file_path = os.path.split(checked_item_path)
-                mov_path = checked_item_path
-                jpg_path = mov_directory_path + '/' + mov_file_path + '_thumbnail.jpg'
+        if os.path.isdir(path):
+            files_in_folder = os.listdir(temp_folder_path)
+            mov_files = [file for file in files_in_folder if file.endswith('.mov')]
+            jpg_files = [file for file in files_in_folder if file.endswith('.jpg')]
+
+            if jpg_files:
+                return None, None
+
+            mov_file_name = mov_files[0] if mov_files else None
+            mov_path = temp_folder_path + '/' + mov_file_name
+            jpg_path = temp_folder_path + '/' + mov_file_name[:-4] + '.jpg'
+            return mov_path, jpg_path
+
+        elif 'temp' in path and path.endswith('.mov'):
+            mov_directory_path, mov_file_name = os.path.split(path)
+            mov_path = path
+            mov_file_name = mov_file_name[:-4]
+            jpg_path = mov_directory_path + '/' + mov_file_name + '.jpg'
+            return mov_path, jpg_path
+
+        else:
+            if path.endswith('.mov'):
+                mov_directory_path, mov_file_name = os.path.split(path)
+                mov_path = path
+                mov_file_name = mov_file_name[:-4]
+                temp_folder_path = os.path.join(mov_directory_path, 'temp')
+                temp_folder_path = temp_folder_path.replace('\\', '/')
+
+                if not os.path.exists(temp_folder_path):
+                    os.makedirs(temp_folder_path)
+                    subprocess.call(['attrib', '+h', temp_folder_path])
+                jpg_path = temp_folder_path + '/' + mov_file_name + '.jpg'
+                return mov_path, jpg_path
             else:
-                mov_path = checked_item_path + '/rendered_output.mov'
-                jpg_path = checked_item_path + '/thumbnail.jpg'
+                return None, None
 
-            # Edit with full path to FFmpeg
+    @staticmethod
+    def _check_file_exists(mov_path, jpg_path):
+        """
+        Check if the MOV and JPG files exist.
+        """
+        is_mov = os.path.isfile(mov_path)
+        is_jpg = os.path.isfile(jpg_path)
+        return is_mov and is_jpg
+
+    @staticmethod
+    def _extract_frame_as_jpg(mov_path, jpg_path):
+        """
+        Extract the first frame from a MOV file and save it as a JPG using FFmpeg.
+        """
+        if os.path.isfile(jpg_path):
+            logger.info(f"This thumbnail(`{jpg_path}) is already exist.")
+        else:
             ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
-
             logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
 
-            # FFmpeg command settings
             ffmpeg_command = [
                 ffmpeg_executable,
-                '-i', mov_path,  # input file
-                '-vf', 'select=eq(n\,0)',  # Select first frame
-                '-q:v', '2',  # Output quality (0 is highest quality, 31 is lowest quality)
-                '-frames:v', '1',  # Extract only one frame
-                jpg_path  # output file
+                '-i', mov_path,
+                '-vf', 'select=eq(n\,0)',
+                '-q:v', '2',
+                '-frames:v', '1',
+                jpg_path
             ]
+
             try:
                 logger.info(f"Run the FFmpeg command: {' '.join(ffmpeg_command)}")
                 subprocess.run(ffmpeg_command, check=True, capture_output=True, text=True)
                 logger.info("FFmpeg command execution completed.")
             except subprocess.CalledProcessError as e:
                 logger.error(f"Error occurred while executing FFmpeg command: {e}")
-            # Log output - end of execution
-            logger.info("Exit Nuke batch mode execution.")
 
     def _event_listener(self):
         """
