@@ -9,6 +9,8 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 import json
 import os
+import shutil
+import time
 import traceback
 import re
 
@@ -29,6 +31,8 @@ browse_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\
              r"\browse.png")
 scan_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
              r"\browse_menu.png")
+copy_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
+             r"\image_sequence.png")
 venv_path = r'X:\Inhouse\Python\.venv\Lib\site-packages'
 sys.path.append(venv_path)
 
@@ -114,9 +118,11 @@ class AppDialog(QtGui.QWidget):
         self.ui.excel_open_button.clicked.connect(self._on_excel_browse)
         self.ui.pushButton_7.clicked.connect(self._on_drop)
         self.ui.scan_button.clicked.connect(self._event_listener)
+        self.ui.copy_button.clicked.connect(self._copy_listener)
 
         self.ui.browse_button.setIcon(QtGui.QIcon(browse_icon_path))
         self.ui.scan_button.setIcon(QtGui.QIcon(scan_icon_path))
+        self.ui.copy_button.setIcon(QtGui.QIcon(copy_icon_path))
 
         # only allow entities that can be linked to PublishedFile entities
         self.ui.context_widget.restrict_entity_types_by_link("PublishedFile", "entity")
@@ -1736,6 +1742,76 @@ class AppDialog(QtGui.QWidget):
             self._run_nuke_script(self._default_config_path)
         else:
             logger.info("No event occurred.")
+
+    def _copy_listener(self):
+        """
+        Copy the scanned files according to the toolkit folder structure.
+        """
+        checked_item_paths = self._get_checked_item_paths()
+        for checked_item_path in checked_item_paths:
+            # Copy only if path is a folder path
+            if os.path.isdir(checked_item_path):
+                temp_folder_name = 'temp'
+                parts = checked_item_path.split('/')
+                origin_directory_path = parts[-1]
+                parts = parts[-1].split('_')
+
+                # Extract the necessary parts
+                project_code = parts[0]
+                seq_code = parts[1]
+                shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
+                category = parts[4]
+                version = parts[5]
+
+                # Extract version information from source path
+                folder_name = os.path.basename(checked_item_path)
+                if category in folder_name:
+                    target_folder = os.path.join(
+                        r'X:\ShotGrid_Test_jw\Project',
+                        project_code,
+                        '04_SEQ',
+                        seq_code,
+                        shot_code,
+                        'Plates',
+                        category,
+                        version
+                    )
+                # If the route already exists
+                if os.path.isdir(target_folder):
+                    logger.info(f'target_folder already exists: {target_folder}')
+                else:
+                    # Copy files to target folder
+                    self._copy_files(checked_item_path, target_folder, temp_folder_name, origin_directory_path)
+
+    def _copy_files(self, source, target, temp_folder_name, origin_directory_path):
+        # Start time record
+        start_time = time.time()
+        # Set file number starting value
+        file_counter = 1001
+
+        for root, dirs, files in os.walk(source):
+            # Skip the temp folder
+            if temp_folder_name in dirs:
+                dirs.remove(temp_folder_name)
+
+            for file in files:
+                # Full path to source file
+                source_file = os.path.join(root, file)
+                file_extension = os.path.splitext(file)[1]
+                os.makedirs(target, exist_ok=True)
+                new_filename = f"{origin_directory_path}.{file_counter:04d}{file_extension}"
+                target_file = os.path.join(target, new_filename)
+
+                # copy files
+                shutil.copy2(source_file, target_file)
+                logger.info(f'Copied {source_file} to {target_file}')
+
+                file_counter += 1
+
+        end_time = time.time()
+        total_time = end_time - start_time
+        print(f'Total time taken: {total_time:.2f} seconds')
+
 
     def _on_browse(self, folders=False):
         """Opens a file dialog to browse to files for publishing."""
