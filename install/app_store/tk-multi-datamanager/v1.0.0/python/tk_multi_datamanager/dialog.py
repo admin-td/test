@@ -37,6 +37,8 @@ venv_path = r'X:\Inhouse\Python\.venv\Lib\site-packages'
 sys.path.append(venv_path)
 
 from openpyxl import Workbook
+from pydpx_meta import DpxHeaderEx
+from OpenEXR import InputFile
 
 
 # import frameworks
@@ -1577,15 +1579,6 @@ class AppDialog(QtGui.QWidget):
         # Make the task validation if the setting `task_required` exists and it's True
         self._validate_task_required()
 
-    def get_exr_format(self,file_path):
-        import nuke
-        temp_node = nuke.createNode('Read', inpanel=False)
-        temp_node['file'].setValue(file_path)
-        width = temp_node.width()
-        height = temp_node.height()
-        nuke.delete(temp_node)
-        return width, height
-
     def _run_nuke_script(self, script_path):
         """
         This function runs the mode for placing Nuke files.
@@ -1617,17 +1610,42 @@ class AppDialog(QtGui.QWidget):
             item = self.model.item(row)
             if item.checkState() == QtCore.Qt.Checked:
                 for root, _, files in os.walk(item.text()):
-                    if files[0].endswith('.exr') or files[0].endswith('.dpx'):
-                        checked_item_paths.append(item.text())
-                        temp_paths.append(item.text())
-                    else:
-                        for file in files:
-                            mov_path = os.path.join(root, file)
-                            mov_path = mov_path.replace('\\', '/')
-                            checked_item_paths.append(mov_path)
+                    if files:
+                        if files[0].endswith('.exr') or files[0].endswith('.dpx'):
+                            metadata = self._get_metadata(root + '/' + files[0])
+                            checked_item_paths.append(item.text())
+                            temp_paths.append({'path': item.text(), 'metadata': metadata})
+                        else:
+                            for file in files:
+                                mov_path = os.path.join(root, file)
+                                mov_path = mov_path.replace('\\', '/')
+                                checked_item_paths.append(mov_path)
         os.environ['TEMP_PATH'] = json.dumps(temp_paths)
 
         return checked_item_paths
+
+    def _get_metadata(self, file_path):
+        if file_path.endswith('.exr'):
+            return self._read_exr_metadata(file_path)
+
+    @staticmethod
+    def _read_exr_metadata(file_path):
+        metadata = {}
+        exr_file = InputFile(file_path)
+        header = exr_file.header()
+
+        metadata['width'] = str(header['dataWindow'].max.x - header['dataWindow'].min.x + 1)
+        metadata['height'] = str(header['dataWindow'].max.y - header['dataWindow'].min.y + 1)
+        timecode = header['timeCode']
+        hours = timecode.hours
+        minutes = timecode.minutes
+        seconds = timecode.seconds
+        frame = timecode.frame
+        metadata['timecode'] = str(f"{hours:02}:{minutes:02}:{seconds:02}:{frame:02}")
+        metadata['fps'] = str(header['framesPerSecond'])
+        metadata['type'] = 'exr'
+
+        return metadata
 
     @staticmethod
     def _run_subprocess(command):
@@ -1657,6 +1675,7 @@ class AppDialog(QtGui.QWidget):
         """
         temp_folder_path = path + '/temp'
 
+        # 경로가 폴더인경우(exr,dpx)
         if os.path.isdir(path):
             files_in_folder = os.listdir(temp_folder_path)
             mov_files = [file for file in files_in_folder if file.endswith('.mov')]
@@ -1665,18 +1684,18 @@ class AppDialog(QtGui.QWidget):
             if jpg_files:
                 return None, None
 
-            mov_file_name = mov_files[0] if mov_files else None
+            mov_file_name = mov_files[0] if mov_files else ''
             mov_path = temp_folder_path + '/' + mov_file_name
             jpg_path = temp_folder_path + '/' + mov_file_name[:-4] + '.jpg'
             return mov_path, jpg_path
-
+        # 경로가 mov 파일인데 temp 폴더 안에 있는 경우(exr,dpx)
         elif 'temp' in path and path.endswith('.mov'):
             mov_directory_path, mov_file_name = os.path.split(path)
             mov_path = path
             mov_file_name = mov_file_name[:-4]
             jpg_path = mov_directory_path + '/' + mov_file_name + '.jpg'
             return mov_path, jpg_path
-
+        # 경로가 mov 파일인데 temp 폴더 안에 있지 않은 경우
         else:
             if path.endswith('.mov'):
                 mov_directory_path, mov_file_name = os.path.split(path)
@@ -1718,7 +1737,6 @@ class AppDialog(QtGui.QWidget):
                 '-i', mov_path,
                 '-vf', 'select=eq(n\,0)',
                 '-q:v', '2',
-                '-frames:v', '1',
                 jpg_path
             ]
 

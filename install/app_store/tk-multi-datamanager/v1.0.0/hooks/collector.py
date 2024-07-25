@@ -19,11 +19,6 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 
 class BasicSceneCollector(HookBaseClass):
-
-    venv_path= r'C:\Users\MAD_JJW\rez\pythonProject\.venv\Lib\site-packages'
-    sys.path.append(venv_path)
-
-    import openpyxl
     """
     A basic collector that handles files and general objects.
 
