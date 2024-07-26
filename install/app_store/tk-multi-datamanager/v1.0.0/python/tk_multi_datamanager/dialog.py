@@ -103,6 +103,7 @@ class AppDialog(QtGui.QWidget):
         self._default_directory_path = "X:/ShotGrid_Test_jw/Project/" + self._bundle.context.project.get("name", "Undefined") + '/scan'
         self._default_config_path = self._bundle.sgtk.configuration_descriptor.get_path() + r'\install\app_store\tk-multi-datamanager\v1.0.0\python\tk_multi_datamanager\batch_render.py'
         self._paths = None
+        self._selected_color = 'ACES - ACES2065-1'
 
         # set up the UI
         self.ui = Ui_Dialog()
@@ -118,13 +119,20 @@ class AppDialog(QtGui.QWidget):
         self.ui.check_button.clicked.connect(self._check_all_items)
         self.ui.uncheck_button.clicked.connect(self._uncheck_all_items)
         self.ui.excel_open_button.clicked.connect(self._on_excel_browse)
-        self.ui.pushButton_7.clicked.connect(self._on_drop)
-        self.ui.scan_button.clicked.connect(self._event_listener)
+        self.ui.publish_button.clicked.connect(self._on_drop)
+        self.ui.scan_button.clicked.connect(self._scan_listener)
         self.ui.copy_button.clicked.connect(self._copy_listener)
 
         self.ui.browse_button.setIcon(QtGui.QIcon(browse_icon_path))
         self.ui.scan_button.setIcon(QtGui.QIcon(scan_icon_path))
         self.ui.copy_button.setIcon(QtGui.QIcon(copy_icon_path))
+
+        self.ui.comboBox.addItem("ACES - ACEScg")
+        self.ui.comboBox.addItem("AlexaV3LogC")
+        self.ui.comboBox.addItem("rec709")
+        self.ui.comboBox.addItem("sRGB")
+        self.ui.comboBox.currentIndexChanged.connect(self._on_combobox_changed)
+
 
         # only allow entities that can be linked to PublishedFile entities
         self.ui.context_widget.restrict_entity_types_by_link("PublishedFile", "entity")
@@ -300,6 +308,10 @@ class AppDialog(QtGui.QWidget):
 
         # run collections
         self._full_rebuild()
+
+    def _on_combobox_changed(self):
+        self._selected_color = self.ui.comboBox.currentText()
+        logger.info(f"Selected: {self._selected_color}")
 
     @property
     def manual_load_enabled(self):
@@ -927,7 +939,6 @@ class AppDialog(QtGui.QWidget):
             self._overlay.show_loading()
             self.ui.button_container.hide()
             new_items = self._publish_manager.collect_files(str_files)
-            logger.info(f"test :  {new_items}")
             num_items_created = len(new_items)
             num_errors = self._progress_handler.pop()
 
@@ -1614,7 +1625,7 @@ class AppDialog(QtGui.QWidget):
                         if files[0].endswith('.exr') or files[0].endswith('.dpx'):
                             metadata = self._get_metadata(root + '/' + files[0])
                             checked_item_paths.append(item.text())
-                            temp_paths.append({'path': item.text(), 'metadata': metadata})
+                            temp_paths.append({'path': item.text(), 'metadata': metadata, 'colorspace': self._selected_color})
                         else:
                             for file in files:
                                 mov_path = os.path.join(root, file)
@@ -1627,6 +1638,8 @@ class AppDialog(QtGui.QWidget):
     def _get_metadata(self, file_path):
         if file_path.endswith('.exr'):
             return self._read_exr_metadata(file_path)
+        elif file_path.endswith('.dpx'):
+            return self._read_dpx_metadata(file_path)
 
     @staticmethod
     def _read_exr_metadata(file_path):
@@ -1644,6 +1657,19 @@ class AppDialog(QtGui.QWidget):
         metadata['timecode'] = str(f"{hours:02}:{minutes:02}:{seconds:02}:{frame:02}")
         metadata['fps'] = str(header['framesPerSecond'])
         metadata['type'] = 'exr'
+
+        return metadata
+
+    @staticmethod
+    def _read_dpx_metadata(file_path):
+        metadata = {}
+        dpx_header = DpxHeaderEx(file_path)
+        metadata['width'] = dpx_header.image_header.pixels_per_line
+        metadata['height'] = dpx_header.image_header.lines_per_element
+        metadata['timecode'] = dpx_header.tv_header.time_code
+        fps_origin = dpx_header.film_header.frame_rate if dpx_header.film_header.frame_rate else dpx_header.tv_header.frame_rate
+        metadata['fps'] = round(fps_origin, 3)
+        metadata['type'] = 'dpx'
 
         return metadata
 
@@ -1727,7 +1753,7 @@ class AppDialog(QtGui.QWidget):
         Extract the first frame from a MOV file and save it as a JPG using FFmpeg.
         """
         if os.path.isfile(jpg_path):
-            logger.info(f"This thumbnail(`{jpg_path}) is already exist.")
+            logger.info(f"This thumbnail({jpg_path}) is already exist.")
         else:
             ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
             logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
@@ -1747,7 +1773,7 @@ class AppDialog(QtGui.QWidget):
             except subprocess.CalledProcessError as e:
                 logger.error(f"Error occurred while executing FFmpeg command: {e}")
 
-    def _event_listener(self):
+    def _scan_listener(self):
         """
         A function that detects specific events.
         Here, we simulate an event with a conditional statement.
