@@ -37,9 +37,12 @@ venv_path = r'X:\Inhouse\Python\.venv\Lib\site-packages'
 sys.path.append(venv_path)
 
 from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image
 from pydpx_meta import DpxHeaderEx
+from pymediainfo import MediaInfo
 from OpenEXR import InputFile
-
 
 # import frameworks
 settings = sgtk.platform.import_framework("tk-framework-shotgunutils", "settings")
@@ -131,6 +134,7 @@ class AppDialog(QtGui.QWidget):
         self.ui.comboBox.addItem("AlexaV3LogC")
         self.ui.comboBox.addItem("rec709")
         self.ui.comboBox.addItem("sRGB")
+        self.ui.comboBox.addItem("legacy")
         self.ui.comboBox.currentIndexChanged.connect(self._on_combobox_changed)
 
 
@@ -1603,9 +1607,7 @@ class AppDialog(QtGui.QWidget):
         self._run_subprocess(command)
 
         for path in checked_item_paths:
-            mov_path, jpg_path = self._determine_paths(path)
-            if mov_path and jpg_path:
-                self._extract_frame_as_jpg(mov_path, jpg_path)
+            self._determine_paths(path)
 
         logger.info("Exit Nuke batch mode execution.")
 
@@ -1615,7 +1617,7 @@ class AppDialog(QtGui.QWidget):
         """
 
         checked_item_paths = []
-        temp_paths = []
+        path_metadatas = []
 
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
@@ -1623,16 +1625,19 @@ class AppDialog(QtGui.QWidget):
                 for root, _, files in os.walk(item.text()):
                     if files:
                         if files[0].endswith('.exr') or files[0].endswith('.dpx'):
-                            metadata = self._get_metadata(root + '/' + files[0])
-                            checked_item_paths.append(item.text())
-                            temp_paths.append({'path': item.text(), 'metadata': metadata, 'colorspace': self._selected_color})
+                            if 'temp' not in root:
+                                metadata = self._get_metadata(root + '/' + files[0])
+                                checked_item_paths.append(item.text())
+                                path_metadatas.append({'path': item.text(), 'metadata': metadata, 'colorspace': self._selected_color})
                         else:
-                            for file in files:
-                                mov_path = os.path.join(root, file)
-                                mov_path = mov_path.replace('\\', '/')
-                                checked_item_paths.append(mov_path)
-        os.environ['TEMP_PATH'] = json.dumps(temp_paths)
-
+                            if 'temp' not in root:
+                                checked_item_paths.append(item.text())
+                                for file in files:
+                                        metadata = self._get_metadata(root + '/' + file)
+                                        mov_path = os.path.join(root, file)
+                                        mov_path = mov_path.replace('\\', '/')
+                                        path_metadatas.append({'path': mov_path, 'metadata': metadata, 'colorspace': self._selected_color})
+        os.environ['TEMP_PATH'] = json.dumps(path_metadatas)
         return checked_item_paths
 
     def _get_metadata(self, file_path):
@@ -1640,13 +1645,14 @@ class AppDialog(QtGui.QWidget):
             return self._read_exr_metadata(file_path)
         elif file_path.endswith('.dpx'):
             return self._read_dpx_metadata(file_path)
+        elif file_path.endswith('.mov'):
+            return self._read_mov_metadata(file_path)
 
     @staticmethod
     def _read_exr_metadata(file_path):
         metadata = {}
         exr_file = InputFile(file_path)
         header = exr_file.header()
-
         metadata['width'] = str(header['dataWindow'].max.x - header['dataWindow'].min.x + 1)
         metadata['height'] = str(header['dataWindow'].max.y - header['dataWindow'].min.y + 1)
         timecode = header['timeCode']
@@ -1657,6 +1663,46 @@ class AppDialog(QtGui.QWidget):
         metadata['timecode'] = str(f"{hours:02}:{minutes:02}:{seconds:02}:{frame:02}")
         metadata['fps'] = str(header['framesPerSecond'])
         metadata['type'] = 'exr'
+
+        return metadata
+
+    @staticmethod
+    def _read_mov_metadata(file_path):
+        metadata = {}
+        media_info = MediaInfo.parse(file_path)
+
+        time_code_of_first_frame = None
+        time_code_of_last_frame = None
+
+        general_track = media_info.tracks[0]
+        filename = general_track.file_name if hasattr(general_track, 'file_name') else "Unknown"
+        duration = general_track.duration
+
+        video_tracks = [track for track in media_info.tracks if track.track_type == 'Video']
+        resolution = f"{video_tracks[0].width}x{video_tracks[0].height}" if video_tracks else "Unknown"
+        width = video_tracks[0].width
+        height = video_tracks[0].height
+
+        fps = float(video_tracks[0].frame_rate) if video_tracks else "Unknown"
+
+        for track in media_info.tracks:
+            if track.track_type == 'Other':
+                if hasattr(track, 'time_code_of_first_frame'):
+                    time_code_of_first_frame = track.time_code_of_first_frame
+                if hasattr(track, 'time_code_of_last_frame'):
+                    time_code_of_last_frame = track.time_code_of_last_frame
+
+        # Assuming the first frame is 1001
+        first_frame = 1
+        last_frame = int(duration / 1000 * fps)
+
+        metadata['width'] = width
+        metadata['height'] = height
+
+        metadata['fps'] = fps
+        metadata['first_frame'] = first_frame
+        metadata['last_frame'] = last_frame
+        metadata['type'] = 'mov'
 
         return metadata
 
@@ -1694,49 +1740,21 @@ class AppDialog(QtGui.QWidget):
         except subprocess.CalledProcessError as e:
             logger.error(f"An error occurred: {e}")
 
-    @staticmethod
-    def _determine_paths(path):
+    def _determine_paths(self, path):
         """
         Determine the MOV and JPG paths based on the given path.
         """
         temp_folder_path = path + '/temp'
 
-        # 경로가 폴더인경우(exr,dpx)
         if os.path.isdir(path):
             files_in_folder = os.listdir(temp_folder_path)
             mov_files = [file for file in files_in_folder if file.endswith('.mov')]
-            jpg_files = [file for file in files_in_folder if file.endswith('.jpg')]
 
-            if jpg_files:
-                return None, None
+            for mov_file in mov_files:
+                mov_path = temp_folder_path + '/' + mov_file
+                jpg_path = temp_folder_path + '/' + mov_file[:-4] + '.jpg'
+                self._extract_frame_as_jpg(mov_path, jpg_path)
 
-            mov_file_name = mov_files[0] if mov_files else ''
-            mov_path = temp_folder_path + '/' + mov_file_name
-            jpg_path = temp_folder_path + '/' + mov_file_name[:-4] + '.jpg'
-            return mov_path, jpg_path
-        # 경로가 mov 파일인데 temp 폴더 안에 있는 경우(exr,dpx)
-        elif 'temp' in path and path.endswith('.mov'):
-            mov_directory_path, mov_file_name = os.path.split(path)
-            mov_path = path
-            mov_file_name = mov_file_name[:-4]
-            jpg_path = mov_directory_path + '/' + mov_file_name + '.jpg'
-            return mov_path, jpg_path
-        # 경로가 mov 파일인데 temp 폴더 안에 있지 않은 경우
-        else:
-            if path.endswith('.mov'):
-                mov_directory_path, mov_file_name = os.path.split(path)
-                mov_path = path
-                mov_file_name = mov_file_name[:-4]
-                temp_folder_path = os.path.join(mov_directory_path, 'temp')
-                temp_folder_path = temp_folder_path.replace('\\', '/')
-
-                if not os.path.exists(temp_folder_path):
-                    os.makedirs(temp_folder_path)
-                    subprocess.call(['attrib', '+h', temp_folder_path])
-                jpg_path = temp_folder_path + '/' + mov_file_name + '.jpg'
-                return mov_path, jpg_path
-            else:
-                return None, None
 
     @staticmethod
     def _check_file_exists(mov_path, jpg_path):
@@ -1753,7 +1771,7 @@ class AppDialog(QtGui.QWidget):
         Extract the first frame from a MOV file and save it as a JPG using FFmpeg.
         """
         if os.path.isfile(jpg_path):
-            logger.info(f"This thumbnail({jpg_path}) is already exist.")
+            logger.info(f"This thumbnail({jpg_path}) is already exists.")
         else:
             ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
             logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
@@ -1793,7 +1811,6 @@ class AppDialog(QtGui.QWidget):
         """
         checked_item_paths = self._get_checked_item_paths()
         for checked_item_path in checked_item_paths:
-            # Copy only if path is a folder path
             if os.path.isdir(checked_item_path):
                 temp_folder_name = 'temp'
                 parts = checked_item_path.split('/')
@@ -1834,7 +1851,6 @@ class AppDialog(QtGui.QWidget):
         file_counter = 1001
 
         for root, dirs, files in os.walk(source):
-            # Skip the temp folder
             if temp_folder_name in dirs:
                 dirs.remove(temp_folder_name)
 
@@ -1843,7 +1859,7 @@ class AppDialog(QtGui.QWidget):
                 source_file = os.path.join(root, file)
                 file_extension = os.path.splitext(file)[1]
                 os.makedirs(target, exist_ok=True)
-                new_filename = f"{origin_directory_path}.{file_counter:04d}{file_extension}"
+                new_filename = f"{origin_directory_path}_{file}" if file_extension == '.mov' else f"{origin_directory_path}.{file_counter:04d}{file_extension}"
                 target_file = os.path.join(target, new_filename)
 
                 # copy files
@@ -1916,22 +1932,157 @@ class AppDialog(QtGui.QWidget):
         item = CheckableItem(file_path)
         self.model.appendRow(item)
 
+    def _get_jpeg_files(self, directory):
+        """
+        Get all .jpg files from the specified directory.
+
+        :param directory: Path to the directory to search for .jpg files
+        :return: List of paths to .jpg files in the directory
+        """
+        jpg_files = []
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.lower().endswith('.jpg'):
+                    jpg_files.append(os.path.join(root, file))
+        return jpg_files
+
     def _save_checked_items_to_excel(self):
         checked_item_paths = []
+        excel_item_list = []
+        idx = 0
+        checked_item_path_list = self._get_checked_item_paths()
+
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
             if item.checkState() == QtCore.Qt.Checked:
+                excel_item = {}
                 for root, _, files in os.walk(item.text()):
-                    logger.info(f"file : {root}")
-                checked_item_paths.append(item.text())
+                    metadata = self._get_metadata(root + '/' + files[0])
 
-        if checked_item_paths:
+                checked_item_paths.append(item.text())
+                jpg_files = self._get_jpeg_files(item.text())
+                jpg_files[0] = jpg_files[0].replace('\\', '/')
+
+                path_segments = item.text().split("/")
+                last_segment = path_segments[6]
+                parts = last_segment.split("_")
+                sequence_code = parts[1]
+                shot_code = "_".join(parts[1:4])
+
+                excel_item['Thumbnail'] = jpg_files[0]
+                excel_item['Sequence'] = sequence_code
+                excel_item['Shot'] = shot_code
+                excel_item['Path'] = item.text()
+
+                file_list = os.listdir(item.text())
+                not_mov_files = [f for f in file_list if f.endswith('.exr') or f.endswith('dpx')]
+                first_file = not_mov_files[0]
+                match = re.search(r'(.*?)(\d+)\.(dpx|exr)$', first_file)
+                prefix = match.group(1)
+                number_str = match.group(2)
+                suffix = match.group(3)
+                first_frame = 1001
+                last_frame = first_frame + len(not_mov_files) - 1
+                excel_item['Cut_In'] = str(first_frame)
+                excel_item['Cut_Out'] = str(last_frame)
+                original_clip = first_file
+                duration = last_frame - first_frame + 1
+                excel_item['Duration'] = str(duration)
+                retrieved_list = json.loads(os.getenv('TEMP_PATH', ''))
+                width = retrieved_list[idx]['metadata']['width']
+                height = retrieved_list[idx]['metadata']['height']
+                excel_item['Resolution'] = str(f'{width}X{height}')
+                if retrieved_list[idx]['metadata']['type'] == 'exr':
+                    fps_value = retrieved_list[idx]['metadata']['fps']
+                    fps_number = re.search(r'\((.*?)\)', fps_value).group(1)
+                elif retrieved_list[idx]['metadata']['type'] == 'dpx':
+                    fps_number = retrieved_list[idx]['metadata']['fps']
+                excel_item['Fps'] = str(fps_number)
+                excel_item['Org_Clip'] = str(retrieved_list[idx])
+                idx = idx + 1
+
+                excel_item_list.append(excel_item)
+        logger.info(f'excel_item_list : {excel_item_list}')
+
+        if excel_item_list:
             workbook = Workbook()
             sheet = workbook.active
             sheet.title = "Checked Items"
 
-            for idx, item in enumerate(checked_item_paths, start=1):
-                sheet[f'A{idx}'] = item
+            # Add header
+            headers = ["Thumbnail", "Sequence", "Shot_Code", "Cut_In", "Cut_Out", "Duration", "Org_Clip", "Resolution", "Fps"]
+            gray_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+            border = Border(left=Side(style='thin'),
+                            right=Side(style='thin'),
+                            top=Side(style='thin'),
+                            bottom=Side(style='thin'))
+
+            for col, header in enumerate(headers, start=1):
+                cell = sheet.cell(row=1, column=col, value=header)
+                cell.fill = gray_fill
+                cell.border = border
+                cell.font = Font(bold=True)
+
+            # Add excel_item_list data starting from the second row
+            for idx, item in enumerate(excel_item_list, start=2):
+                thumbnail_path = item.get('Thumbnail')
+                sequence = item.get('Sequence')
+                shot = item.get('Shot')
+                cut_in = item.get('Cut_In')
+                cut_out = item.get('Cut_Out')
+                duration = item.get('Duration')
+                original_clip = item.get('Org_Clip')
+                resolution = item.get('Resolution')
+                fps = item.get('Fps')
+
+                if thumbnail_path and os.path.isfile(thumbnail_path):
+                    img = Image(thumbnail_path)
+                    img.anchor = f'A{idx}'  # Set the cell where the image will be placed
+                    img.width = 150
+                    img.height = 100
+                    sheet.add_image(img)
+
+                    # Adjust column width to fit the image
+                    sheet.row_dimensions[idx].height = 75  # OpenPyXL row height units are different
+                    col_letter = get_column_letter(1)  # 'A' column for Thumbnail
+                    sheet.column_dimensions[col_letter].width = 18.5
+
+                else:
+                    thumbnail_cell = sheet.cell(row=idx, column=1, value="No thumbnail")
+                    thumbnail_cell.border = border
+
+                sequence_cell = sheet.cell(row=idx, column=2, value=sequence)
+                sequence_cell.border = border
+                shot_cell = sheet.cell(row=idx, column=3, value=shot)
+                shot_cell.border = border
+                cut_in_cell = sheet.cell(row=idx, column=4, value=cut_in)
+                cut_in_cell.border = border
+                cut_out_cell = sheet.cell(row=idx, column=5, value=cut_out)
+                cut_out_cell.border = border
+                duration_cell = sheet.cell(row=idx, column=6, value=duration)
+                duration_cell.border = border
+                original_clip_cell = sheet.cell(row=idx, column=7, value='')
+                original_clip_cell.border = border
+                resolution_cell = sheet.cell(row=idx, column=8, value=resolution)
+                resolution_cell.border = border
+                fps_cell = sheet.cell(row=idx, column=9, value=fps)
+                fps_cell.border = border
+
+                # path_cell = sheet.cell(row=idx, column=7, value=item_path)
+                # path_cell.border = border
+
+            # Adjust column width to fit the contents
+            for col in range(2, sheet.max_column + 1):
+                max_length = 0
+                column = get_column_letter(col)
+                for cell in sheet[column]:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                sheet.column_dimensions[column].width = adjusted_width
 
             save_path = self._get_save_path(self._default_directory_path)
             default_directory = os.path.dirname(save_path)
