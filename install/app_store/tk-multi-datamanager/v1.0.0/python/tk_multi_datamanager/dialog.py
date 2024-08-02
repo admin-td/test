@@ -23,16 +23,15 @@ import subprocess
 from .api import PublishManager, PublishItem, PublishTask
 from .ui.dialog import Ui_Dialog
 from .progress import ProgressHandler
-
 from .summary_overlay import SummaryOverlay
 from .publish_tree_widget import TreeNodeItem, TreeNodeTask, TopLevelTreeNodeItem
 
 browse_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
-             r"\browse.png")
+                    r"\browse.png")
 scan_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
-             r"\browse_menu.png")
+                  r"\browse_menu.png")
 copy_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
-             r"\image_sequence.png")
+                  r"\image_sequence.png")
 venv_path = r'X:\Inhouse\Python\.venv\Lib\site-packages'
 sys.path.append(venv_path)
 
@@ -43,6 +42,7 @@ from openpyxl.drawing.image import Image
 from pydpx_meta import DpxHeaderEx
 from pymediainfo import MediaInfo
 from OpenEXR import InputFile
+import pandas as pd
 
 # import frameworks
 settings = sgtk.platform.import_framework("tk-framework-shotgunutils", "settings")
@@ -61,10 +61,74 @@ logger = sgtk.platform.get_logger(__name__)
 
 
 class CheckableItem(QtGui.QStandardItem):
-    def __init__(self, text=''):
-        super().__init__(text)
+    def __init__(self, file_info_dict=''):
+        self._bundle = sgtk.platform.current_bundle()
+        self._default_directory = "X:/ShotGrid_Test_jw/Project/" + self._bundle.context.project.get("name",
+                                                                                                    "Undefined") + '/scan'
+        super().__init__(file_info_dict['path'])
+
+        # Retrieve checked items
+        checked_items = self._fetch_checked_items()
+
         self.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-        self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
+
+        if not checked_items:
+            self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
+        else:
+            # Check if the current item should be checked
+            if file_info_dict['index'] in [item['index'] for item in checked_items]:
+                self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
+            else:
+                self.setData(QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+
+    def _fetch_checked_items(self):
+        """
+        Fetch checked items from the latest Excel file.
+        """
+        # Get the latest Excel file path
+        excel_file_path = self._get_latest_excel_file_path(self._default_directory)
+
+        if not excel_file_path:
+            return None
+
+        # Read the Excel file
+        df = pd.read_excel(excel_file_path)
+
+        # Filter checked and unchecked rows
+        checked_df = df[df['Check'] == 'checked']
+
+        # Create a list of dictionaries containing index and row data for checked items
+        checked_items_list = [{'index': idx, **row} for idx, row in checked_df.iterrows()]
+
+        return checked_items_list
+
+    @staticmethod
+    def _get_latest_excel_file_path(directory):
+        """
+        Get the latest Excel file from the specified directory.
+
+        Args:
+            directory (str): The directory to search for Excel files.
+
+        Returns:
+            str: The path to the latest Excel file.
+        """
+        base_name = "scan_list_"
+        ext = ".xlsx"
+
+        # Find all files in the directory that match the base name and extension
+        existing_files = [f for f in os.listdir(directory) if f.startswith(base_name) and f.endswith(ext)]
+
+        if not existing_files:
+            return None
+
+        # Extract numbers from filenames and find the highest number
+        numbers = [int(re.findall(r'\d+', f[len(base_name):])[0]) for f in existing_files if
+                   re.findall(r'\d+', f[len(base_name):])]
+        max_number = max(numbers) if numbers else 1
+        next_file_name = f"{base_name}{max_number:02d}{ext}"
+
+        return os.path.join(directory, next_file_name)
 
 
 class AppDialog(QtGui.QWidget):
@@ -136,7 +200,6 @@ class AppDialog(QtGui.QWidget):
         self.ui.comboBox.addItem("sRGB")
         self.ui.comboBox.addItem("legacy")
         self.ui.comboBox.currentIndexChanged.connect(self._on_combobox_changed)
-
 
         # only allow entities that can be linked to PublishedFile entities
         self.ui.context_widget.restrict_entity_types_by_link("PublishedFile", "entity")
@@ -286,7 +349,6 @@ class AppDialog(QtGui.QWidget):
         self._overlay.info_clicked.connect(
             self._progress_handler._progress_details.toggle
         )
-
 
         # hide settings for now
         self.ui.item_settings_label.hide()
@@ -485,11 +547,11 @@ class AppDialog(QtGui.QWidget):
 
         # Now figure out if we need to create/replace the widgets.
         if (
-            # If we had a selection before
-            self._current_tasks
-            and
-            # and it was of the same type as the new one.
-            self._current_tasks.is_same_task_type(new_task_selection)
+                # If we had a selection before
+                self._current_tasks
+                and
+                # and it was of the same type as the new one.
+                self._current_tasks.is_same_task_type(new_task_selection)
         ):
             logger.debug("Reusing custom ui from %s.", new_task_selection.plugin)
         else:
@@ -916,10 +978,9 @@ class AppDialog(QtGui.QWidget):
                 for root, _, files in os.walk(item.text()):
                     if files[0].endswith('.mov'):
                         for file in files:
-                            checked_item_paths.append(root+'\\'+file)
+                            checked_item_paths.append(root + '\\' + file)
                     else:
                         checked_item_paths.append(item.text())
-
 
         # Short circuiting method disabling actual action performed on dropping to the target.
         if not self.manual_load_enabled:
@@ -972,8 +1033,6 @@ class AppDialog(QtGui.QWidget):
 
         # lastly, select the summary
         self.ui.items_tree.select_first_item()
-
-
 
     def _synchronize_tree(self):
         """
@@ -1628,15 +1687,17 @@ class AppDialog(QtGui.QWidget):
                             if 'temp' not in root:
                                 metadata = self._get_metadata(root + '/' + files[0])
                                 checked_item_paths.append(item.text())
-                                path_metadatas.append({'path': item.text(), 'metadata': metadata, 'colorspace': self._selected_color})
+                                path_metadatas.append(
+                                    {'path': item.text(), 'metadata': metadata, 'colorspace': self._selected_color})
                         else:
                             if 'temp' not in root:
                                 checked_item_paths.append(item.text())
                                 for file in files:
-                                        metadata = self._get_metadata(root + '/' + file)
-                                        mov_path = os.path.join(root, file)
-                                        mov_path = mov_path.replace('\\', '/')
-                                        path_metadatas.append({'path': mov_path, 'metadata': metadata, 'colorspace': self._selected_color})
+                                    metadata = self._get_metadata(root + '/' + file)
+                                    mov_path = os.path.join(root, file)
+                                    mov_path = mov_path.replace('\\', '/')
+                                    path_metadatas.append(
+                                        {'path': mov_path, 'metadata': metadata, 'colorspace': self._selected_color})
         os.environ['TEMP_PATH'] = json.dumps(path_metadatas)
         return checked_item_paths
 
@@ -1755,7 +1816,6 @@ class AppDialog(QtGui.QWidget):
                 jpg_path = temp_folder_path + '/' + mov_file[:-4] + '.jpg'
                 self._extract_frame_as_jpg(mov_path, jpg_path)
 
-
     @staticmethod
     def _check_file_exists(mov_path, jpg_path):
         """
@@ -1870,8 +1930,7 @@ class AppDialog(QtGui.QWidget):
 
         end_time = time.time()
         total_time = end_time - start_time
-        print(f'Total time taken: {total_time:.2f} seconds')
-
+        logger.info(f'Total time taken: {total_time:.2f} seconds')
 
     def _on_browse(self, folders=False):
         """Opens a file dialog to browse to files for publishing."""
@@ -1924,12 +1983,13 @@ class AppDialog(QtGui.QWidget):
 
     def _add_folder_to_list(self, folder_path):
         subfolder_paths = [f.path for f in os.scandir(folder_path) if f.is_dir()]
-        for subfolder_path in subfolder_paths:
+        for idx, subfolder_path in enumerate(subfolder_paths):
             subfolder_path = subfolder_path.replace("\\", "/")
-            self._add_file_to_list(subfolder_path)
+            subfolder_path_dict = {'index': idx, 'path': subfolder_path}
+            self._add_file_to_list(subfolder_path_dict)
 
-    def _add_file_to_list(self, file_path):
-        item = CheckableItem(file_path)
+    def _add_file_to_list(self, file_path_dict):
+        item = CheckableItem(file_path_dict)
         self.model.appendRow(item)
 
     def _get_jpeg_files(self, directory):
@@ -1947,70 +2007,83 @@ class AppDialog(QtGui.QWidget):
         return jpg_files
 
     def _save_checked_items_to_excel(self):
-        checked_item_paths = []
         excel_item_list = []
-        idx = 0
-        checked_item_path_list = self._get_checked_item_paths()
 
         for row in range(self.model.rowCount()):
             item = self.model.item(row)
+            excel_item = {}
+
             if item.checkState() == QtCore.Qt.Checked:
-                excel_item = {}
-                for root, _, files in os.walk(item.text()):
-                    metadata = self._get_metadata(root + '/' + files[0])
+                excel_item['Check'] = 'checked'
+            else:
+                excel_item['Check'] = 'unchecked'
 
-                checked_item_paths.append(item.text())
-                jpg_files = self._get_jpeg_files(item.text())
-                jpg_files[0] = jpg_files[0].replace('\\', '/')
+            jpg_files = self._get_jpeg_files(item.text() + '/temp')
 
-                path_segments = item.text().split("/")
-                last_segment = path_segments[6]
-                parts = last_segment.split("_")
-                sequence_code = parts[1]
-                shot_code = "_".join(parts[1:4])
+            if not jpg_files:
+                logger.info(f'No Thumbnail image({item.text()})')
+                jpg_file = ''
+            else:
+                jpg_file = jpg_files[0].replace('\\', '/')
 
-                excel_item['Thumbnail'] = jpg_files[0]
-                excel_item['Sequence'] = sequence_code
-                excel_item['Shot'] = shot_code
-                excel_item['Path'] = item.text()
+            file_list = os.listdir(item.text())
 
-                file_list = os.listdir(item.text())
-                not_mov_files = [f for f in file_list if f.endswith('.exr') or f.endswith('dpx')]
-                first_file = not_mov_files[0]
+            ## mov 파일은 폴더당 하나라고 가정
+            files = [f for f in file_list if f.endswith('.exr') or f.endswith('dpx') or f.endswith('mov')]
+            first_file = files[0]
+
+            metadata = self._get_metadata(item.text() + '/' + first_file)
+
+            path_segments = item.text().split("/")
+            folder_name = path_segments[6]
+            parts = folder_name.split("_")
+            sequence_code = parts[1]
+            shot_code = "_".join(parts[1:4])
+
+            excel_item['Thumbnail'] = jpg_file
+            excel_item['Sequence'] = sequence_code or ''
+            excel_item['Shot'] = shot_code or ''
+            excel_item['Path'] = item.text()
+
+            if first_file.endswith('mov'):
+                first_frame = metadata['first_frame'] + 1000
+                last_frame = metadata['last_frame'] + 1000
+                base_filename = first_file.rsplit('.', 1)[0]
+                excel_item['Org_Clip'] = str(base_filename)
+            else:
                 match = re.search(r'(.*?)(\d+)\.(dpx|exr)$', first_file)
                 prefix = match.group(1)
                 number_str = match.group(2)
                 suffix = match.group(3)
                 first_frame = 1001
-                last_frame = first_frame + len(not_mov_files) - 1
-                excel_item['Cut_In'] = str(first_frame)
-                excel_item['Cut_Out'] = str(last_frame)
-                original_clip = first_file
-                duration = last_frame - first_frame + 1
-                excel_item['Duration'] = str(duration)
-                retrieved_list = json.loads(os.getenv('TEMP_PATH', ''))
-                width = retrieved_list[idx]['metadata']['width']
-                height = retrieved_list[idx]['metadata']['height']
-                excel_item['Resolution'] = str(f'{width}X{height}')
-                if retrieved_list[idx]['metadata']['type'] == 'exr':
-                    fps_value = retrieved_list[idx]['metadata']['fps']
-                    fps_number = re.search(r'\((.*?)\)', fps_value).group(1)
-                elif retrieved_list[idx]['metadata']['type'] == 'dpx':
-                    fps_number = retrieved_list[idx]['metadata']['fps']
-                excel_item['Fps'] = str(fps_number)
-                excel_item['Org_Clip'] = str(retrieved_list[idx])
-                idx = idx + 1
+                last_frame = first_frame + len(files) - 1
+                excel_item['Org_Clip'] = str(prefix[:-1])
 
-                excel_item_list.append(excel_item)
-        logger.info(f'excel_item_list : {excel_item_list}')
+            fps_number = metadata['fps']
+            if metadata['type'] == 'exr':
+                fps_value = metadata['fps']
+                fps_number = re.search(r'\((.*?)\)', fps_value).group(1)
+            excel_item['Cut_In'] = str(first_frame) or 0
+            excel_item['Cut_Out'] = str(last_frame) or 0
+            duration = last_frame - first_frame + 1
+            excel_item['Duration'] = str(duration)
+
+            width = metadata['width']
+            height = metadata['height']
+            excel_item['Resolution'] = str(f'{width}X{height}') or ''
+
+            excel_item['Fps'] = str(fps_number) or ''
+
+            excel_item_list.append(excel_item)
 
         if excel_item_list:
             workbook = Workbook()
             sheet = workbook.active
-            sheet.title = "Checked Items"
+            sheet.title = "Items"
 
             # Add header
-            headers = ["Thumbnail", "Sequence", "Shot_Code", "Cut_In", "Cut_Out", "Duration", "Org_Clip", "Resolution", "Fps"]
+            headers = ["Thumbnail", "Sequence", "Shot_Code", "Cut_In", "Cut_Out", "Duration", "Org_Clip", "Resolution",
+                       "Fps", "Check"]
             gray_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
             border = Border(left=Side(style='thin'),
                             right=Side(style='thin'),
@@ -2028,6 +2101,7 @@ class AppDialog(QtGui.QWidget):
                 thumbnail_path = item.get('Thumbnail')
                 sequence = item.get('Sequence')
                 shot = item.get('Shot')
+                check = item.get('Check')
                 cut_in = item.get('Cut_In')
                 cut_out = item.get('Cut_Out')
                 duration = item.get('Duration')
@@ -2045,7 +2119,7 @@ class AppDialog(QtGui.QWidget):
                     # Adjust column width to fit the image
                     sheet.row_dimensions[idx].height = 75  # OpenPyXL row height units are different
                     col_letter = get_column_letter(1)  # 'A' column for Thumbnail
-                    sheet.column_dimensions[col_letter].width = 18.5
+                    sheet.column_dimensions[col_letter].width = 18.75
 
                 else:
                     thumbnail_cell = sheet.cell(row=idx, column=1, value="No thumbnail")
@@ -2061,12 +2135,14 @@ class AppDialog(QtGui.QWidget):
                 cut_out_cell.border = border
                 duration_cell = sheet.cell(row=idx, column=6, value=duration)
                 duration_cell.border = border
-                original_clip_cell = sheet.cell(row=idx, column=7, value='')
+                original_clip_cell = sheet.cell(row=idx, column=7, value=original_clip)
                 original_clip_cell.border = border
                 resolution_cell = sheet.cell(row=idx, column=8, value=resolution)
                 resolution_cell.border = border
                 fps_cell = sheet.cell(row=idx, column=9, value=fps)
                 fps_cell.border = border
+                check_cell = sheet.cell(row=idx, column=10, value=check)
+                check_cell.border = border
 
                 # path_cell = sheet.cell(row=idx, column=7, value=item_path)
                 # path_cell.border = border
@@ -2099,7 +2175,6 @@ class AppDialog(QtGui.QWidget):
 
             if file_path:
                 workbook.save(save_path)
-                logger.info(f"Checked items saved to {save_path}")
 
     @staticmethod
     def _get_save_path(folder_path):
