@@ -201,8 +201,126 @@ class PublishPluginInstance(PluginInstanceBase):
         :param settings: Dictionary of settings
         :param item: Item to analyze
         """
+        import os
+        import re
+
         with self._handle_plugin_error("Publish complete!", "Error publishing: %s"):
-            self._hook_instance.publish(settings, item)
+            path = item.properties["path"]
+            folder_path = os.path.dirname(path)
+
+            if 'Upload' not in settings:
+                checked_item_path = folder_path.replace('\\', '/')
+                parts = checked_item_path.split('/')
+
+                if os.path.isdir(checked_item_path):
+                    parts = parts[-1].split('_')
+
+                # Extract the necessary parts
+                project_code = parts[0]
+                seq_code = parts[1]
+                shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
+                category = parts[4]
+                version = parts[5]
+                # Extract version information from source path
+                target_folder = os.path.join(
+                    r'X:\ShotGrid_Test_jw\Project',
+                    project_code,
+                    '04_SEQ',
+                    seq_code,
+                    shot_code,
+                    'Plates',
+                    category,
+                    version,
+                )
+
+                for root, _, files in os.walk(target_folder):
+                    if files:
+                        if files[0].endswith('.exr') or files[0].endswith('.dpx'):
+                            match = re.search(r'\.(\d+)\.', files[0])
+                            if match:
+                                frame_number = match.group(1)
+                                padding = len(frame_number)
+                                new_filename = files[0].replace(frame_number, f"%0{padding}d")
+                                file = new_filename
+                        else:
+                            if files[0].endswith('.mov'):
+                                file = files[0]
+
+                target_folder_file = target_folder + '\\' + file
+
+                config_path = r'X:\ShotGrid_Test_jw\Project\config_test'
+                tk = sgtk.sgtk_from_path(config_path)
+                sg = tk.shotgun
+
+                current_engine = sgtk.platform.current_engine()
+                context = current_engine.context
+                project_id = context.project['id']
+                user_id = context.user['id']
+                filters = [
+                    ['project', 'is', {'type': 'Project', 'id': project_id}],
+                    ['code', 'is', shot_code]
+                ]
+                fields = ['id']
+                shot_id = sg.find_one('Shot', filters, fields)
+                upload_movie_path = target_folder + '\\temp\\'
+
+                # Set mov file path and name
+                mov_files = [f for f in os.listdir(upload_movie_path) if f.endswith('.mov')]
+                upload_movie_path = upload_movie_path + mov_files[0]
+
+                if category == 'org':
+                    file_type_id = 166
+                elif category == 'edit':
+                    file_type_id = 167
+                elif category == 'src':
+                    file_type_id = 199
+
+                if path.endswith('mov'):
+                    movie_file_path = upload_movie_path
+                    frames_file_path = ''
+                else:
+                    movie_file_path = upload_movie_path
+                    frames_file_path = target_folder_file
+                # MOV file version register
+                version_data = {
+                    'project': {'type': 'Project', 'id': project_id},
+                    'entity': {'type': 'Shot', 'id': shot_id['id']},  # shot or entity
+                    'code': project_code + '_' + shot_code + '_' + category + '_' + version,  # version name
+                    'sg_path_to_movie': movie_file_path,
+                    'sg_path_to_frames': frames_file_path,
+                    'sg_version_type' : category
+                }
+
+                # Version create
+                new_version = sg.create('Version', version_data)
+
+                # File upload
+                sg.upload('Version', new_version['id'], upload_movie_path, field_name='sg_uploaded_movie')
+                publish_code = target_folder_file.split('\\')
+                logger.info(f"Created Version details: {new_version}")
+
+                thumbnail_path =  item.get_thumbnail_as_path(),
+
+                # Version publish
+                publish_data = {
+                    'project': {'type': 'Project', 'id': project_id},
+                    'entity': {'type': 'Shot', 'id': shot_id['id']},
+                    'published_file_type': {'type': 'PublishedFileType', 'id': file_type_id},
+                    'path': {
+                        'local_path': target_folder_file,
+                        'type': 'Path',  # Path type(ex: 'Path', 'Link'..)
+                    },
+                    'code': publish_code[-1],
+                    'version': new_version,
+                    'image' : thumbnail_path[0],
+                    'description' : item.description,
+                    'created_by': {'type': 'HumanUser', 'id': user_id},
+                }
+
+                # Publish
+                published_file = sg.create('PublishedFile', publish_data)
+                logger.info(f"Published file created: {published_file['id']}")
+
 
     def run_finalize(self, settings, item):
         """
