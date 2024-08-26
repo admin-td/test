@@ -1,7 +1,46 @@
 import shutil
 import subprocess
 from datetime import datetime
+import os
 
+
+def convert_to_copy_path(path):
+    """
+    Copy the scanned files according to the toolkit folder structure.
+    """
+    parts = path.split('/')
+    target_folder = None
+    if os.path.isdir(path):
+        parts = parts[-1].split('_')
+    else:
+        parts = parts[-2].split('_')
+
+    # Extract the necessary parts
+    project_code = parts[0]
+    seq_code = parts[1]
+    shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
+    category = parts[4]
+    version = parts[5]
+
+    # Extract version information from source path
+    target_folder = os.path.join(
+        r'X:\ShotGrid_Test_jw\Project',
+        project_code,
+        '04_SEQ',
+        seq_code,
+        shot_code,
+        'Plates',
+        category,
+        version
+    )
+
+    return target_folder
+            # # If the route already exists
+            # if os.path.isdir(target_folder):
+            #     logger.info(f'target_folder already exists: {target_folder}')
+            # else:
+            #     # Copy files to target folder
+            #     self._copy_files(checked_item_path, target_folder, temp_folder_name, origin_directory_path)
 
 def ACES_2065_1_Seq():
     not_mov_files.sort()
@@ -42,11 +81,14 @@ def ACES_2065_1_Seq():
     ocio_node['colorspace'].setValue('ACES - ACES2065-1')
     ocio_node.setInput(0, read_node)
 
-    temp_folder_path = os.path.join(retrieved_item['path'], 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
+
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
@@ -95,14 +137,15 @@ def ACES_2065_1_Mov():
     ocio_node['colorspace'].setValue('ACES - ACES2065-1')
     ocio_node.setInput(0, read_node)
 
-    temp_folder_path = os.path.join(default_directory, 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
 
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
 
-    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}_{default_file_name}')
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
     if os.path.isfile(new_output_path):
@@ -158,11 +201,14 @@ def ACEScg_Seq():
     ocio_node['colorspace'].setValue('ACES - ACEScg')
     ocio_node.setInput(0, read_node)
 
-    temp_folder_path = os.path.join(retrieved_item['path'], 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
+
     prefix = prefix[:-1]
     new_output_path = os.path.join(temp_folder_path, f'{prefix}.mov')
     new_output_path = new_output_path.replace('\\', '/')
@@ -215,14 +261,15 @@ def ACEScg_Mov():
     ocio_node['colorspace'].setValue('ACES - ACEScg')
     ocio_node.setInput(0, read_node)
 
-    temp_folder_path = os.path.join(default_directory, 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
 
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
 
-    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}_{default_file_name}')
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
     if os.path.isfile(new_output_path):
@@ -267,12 +314,15 @@ def AlexaV3_Mov():
     ocio_node = nuke.createNode('JUNG_OCIO')
     ocio_node.setInput(0, read_node)
 
-    temp_folder_path = os.path.join(default_directory, 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
-    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}_{default_file_name}')
+
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
     if os.path.isfile(new_output_path):
@@ -321,11 +371,14 @@ def AlexaV3_Seq():
     ocio_node = nuke.createNode('JUNG_OCIO')
     ocio_node.setInput(0, read_node)
 
-    temp_folder_path = os.path.join(retrieved_item['path'], 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
+
     prefix = prefix[:-1]
     new_output_path = os.path.join(temp_folder_path, f'{prefix}.mov')
     new_output_path = new_output_path.replace('\\', '/')
@@ -365,12 +418,15 @@ def rec709_Mov():
     read_node['format'].setValue(new_format)
     read_node['colorspace'].setValue('rec709')
 
-    temp_folder_path = os.path.join(default_directory, 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
-    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}_{default_file_name}')
+
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
     if os.path.isfile(new_output_path):
@@ -417,11 +473,14 @@ def rec709_Seq():
     read_node['format'].setValue(new_format)
     read_node['colorspace'].setValue('rec709')
 
-    temp_folder_path = os.path.join(retrieved_item['path'], 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
+
     prefix = prefix[:-1]
     new_output_path = os.path.join(temp_folder_path, f'{prefix}.mov')
     new_output_path = new_output_path.replace('\\', '/')
@@ -461,13 +520,15 @@ def sRGB_Mov():
     read_node['format'].setValue(new_format)
     read_node['colorspace'].setValue('sRGB')
 
-    temp_folder_path = os.path.join(default_directory, 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
 
-    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}_{default_file_name}')
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
     if os.path.isfile(new_output_path):
@@ -513,11 +574,14 @@ def sRGB_Seq():
     read_node['format'].setValue(new_format)
     read_node['colorspace'].setValue('sRGB')
 
-    temp_folder_path = os.path.join(retrieved_item['path'], 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
+
     prefix = prefix[:-1]
     new_output_path = os.path.join(temp_folder_path, f'{prefix}.mov')
     new_output_path = new_output_path.replace('\\', '/')
@@ -566,11 +630,14 @@ def legacy_Seq():
     read_node['origlast'].setValue(last_frame)
     read_node['format'].setValue(new_format)
 
-    temp_folder_path = os.path.join(retrieved_item['path'], 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
+
     if not os.path.exists(temp_folder_path):
         os.makedirs(temp_folder_path)
         subprocess.call(['attrib', '+h', temp_folder_path])
+
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
@@ -597,7 +664,8 @@ def legacy_Mov():
     default_directory = os.path.dirname(retrieved_item['path'])
     default_file_name = os.path.basename(retrieved_item['path'])
 
-    temp_folder_path = os.path.join(default_directory, 'temp')
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
     temp_folder_path = temp_folder_path.replace('\\', '/')
 
     if not os.path.exists(temp_folder_path):
