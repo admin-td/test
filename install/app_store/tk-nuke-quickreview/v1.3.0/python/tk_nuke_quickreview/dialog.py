@@ -46,7 +46,8 @@ class Dialog(QtGui.QWidget):
 
         self._context = self._bundle.context
         self._title = self._generate_title()
-
+        self._none_date_title = self._title.split(',')[0]
+        self._none_date_title = self._none_date_title.replace(' ', '_')
         self._task_manager = task_manager.BackgroundTaskManager(
             parent=self, start_processing=True, max_threads=2
         )
@@ -75,7 +76,7 @@ class Dialog(QtGui.QWidget):
         self.ui.cancel.clicked.connect(self.close)
 
         # set up basic UI
-        self.ui.version_name.setText(self._title)
+        self.ui.version_name.setText(self._none_date_title)
         self.ui.start_frame.setText(str(self._get_first_frame()))
         self.ui.end_frame.setText(str(self._get_last_frame()))
 
@@ -407,7 +408,7 @@ class Dialog(QtGui.QWidget):
         self._setup_formatting(version_name)
 
         # generate temp file for mov sequence
-        mov_path = os.path.join(tempfile.gettempdir(), "quickreview.mov")
+        mov_path = os.path.join(tempfile.gettempdir(), f"{version_name}.mov")
         mov_path = sgtk.util.filesystem.get_unused_path(mov_path)
 
         # get frame ranges from ui
