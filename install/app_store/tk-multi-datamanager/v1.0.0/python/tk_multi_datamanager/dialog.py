@@ -976,11 +976,18 @@ class AppDialog(QtGui.QWidget):
             item = self.model.item(row)
             if item.checkState() == QtCore.Qt.Checked:
                 for root, _, files in os.walk(item.text()):
-                    if files[0].endswith('.mov'):
-                        for file in files:
-                            checked_item_paths.append(root + '\\' + file)
-                    else:
-                        checked_item_paths.append(item.text())
+                    if files:
+                        if files[0].endswith('.exr') or files[0].endswith('.dpx'):
+                            checked_item_paths.append(item.text())
+                        else:
+                            if 'temp' not in root:
+                                if files[0].endswith('.mov'):
+                                    for file in files:
+                                        checked_item_paths.append(root + '\\' + file)
+                            # else:
+                            #     for file in files:
+                            #         temp_file = root + '\\' + file
+                            #         logger.info(f'test23:{temp_file}')
 
         # Short circuiting method disabling actual action performed on dropping to the target.
         if not self.manual_load_enabled:
@@ -1346,9 +1353,10 @@ class AppDialog(QtGui.QWidget):
                 self._progress_handler.push("Running finalizing pass")
 
                 try:
-                    self._publish_manager.finalize(
-                        task_generator=self._finalize_task_generator()
-                    )
+                    pass
+                    # self._publish_manager.finalize(
+                    #     task_generator=self._finalize_task_generator()
+                    # )
                 except Exception:
                     # ensure the full error shows up in the log file
                     logger.error(
@@ -1805,9 +1813,35 @@ class AppDialog(QtGui.QWidget):
         """
         Determine the MOV and JPG paths based on the given path.
         """
-        temp_folder_path = path + '/temp'
+        parts = path.split('/')
 
         if os.path.isdir(path):
+            parts = parts[-1].split('_')
+        else:
+            logger.error('Path does not exist')
+
+        # Extract the necessary parts
+        project_code = parts[0]
+        seq_code = parts[1]
+        shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
+        category = parts[4]
+        version = parts[5]
+
+        # Extract version information from source path
+        target_folder = os.path.join(
+            r'X:\ShotGrid_Test_jw\Project',
+            project_code,
+            '04_SEQ',
+            seq_code,
+            shot_code,
+            'Plates',
+            category,
+            version
+        )
+
+        temp_folder_path = target_folder + '/temp'
+
+        if os.path.isdir(target_folder):
             files_in_folder = os.listdir(temp_folder_path)
             mov_files = [file for file in files_in_folder if file.endswith('.mov')]
 
@@ -1904,7 +1938,8 @@ class AppDialog(QtGui.QWidget):
                     # Copy files to target folder
                     self._copy_files(checked_item_path, target_folder, temp_folder_name, origin_directory_path)
 
-    def _copy_files(self, source, target, temp_folder_name, origin_directory_path):
+    @staticmethod
+    def _copy_files(source, target, temp_folder_name, origin_directory_path):
         # Start time record
         start_time = time.time()
         # Set file number starting value
@@ -1919,7 +1954,7 @@ class AppDialog(QtGui.QWidget):
                 source_file = os.path.join(root, file)
                 file_extension = os.path.splitext(file)[1]
                 os.makedirs(target, exist_ok=True)
-                new_filename = f"{origin_directory_path}_{file}" if file_extension == '.mov' else f"{origin_directory_path}.{file_counter:04d}{file_extension}"
+                new_filename = f"{origin_directory_path}{file_extension}" if file_extension == '.mov' else f"{origin_directory_path}.{file_counter:04d}{file_extension}"
                 target_file = os.path.join(target, new_filename)
 
                 # copy files
@@ -2018,7 +2053,36 @@ class AppDialog(QtGui.QWidget):
             else:
                 excel_item['Check'] = 'unchecked'
 
-            jpg_files = self._get_jpeg_files(item.text() + '/temp')
+            checked_item_path = item.text()
+            target_folder = None
+
+            if os.path.isdir(checked_item_path):
+                temp_folder_name = 'temp'
+                parts = checked_item_path.split('/')
+                origin_directory_path = parts[-1]
+                parts = parts[-1].split('_')
+
+                # Extract the necessary parts
+                project_code = parts[0]
+                seq_code = parts[1]
+                shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
+                category = parts[4]
+                version = parts[5]
+
+                # Extract version information from source path
+                target_folder = os.path.join(
+                    r'X:\ShotGrid_Test_jw\Project',
+                    project_code,
+                    '04_SEQ',
+                    seq_code,
+                    shot_code,
+                    'Plates',
+                    category,
+                    version
+                )
+
+            temp_path = target_folder + '/temp'
+            jpg_files = self._get_jpeg_files(temp_path)
 
             if not jpg_files:
                 logger.info(f'No Thumbnail image({item.text()})')
