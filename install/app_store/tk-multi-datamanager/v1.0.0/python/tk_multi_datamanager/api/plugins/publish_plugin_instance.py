@@ -194,7 +194,7 @@ class PublishPluginInstance(PluginInstanceBase):
 
         return status
 
-    def run_publish(self, settings, item):
+    def run_publish(self, settings, item, CheckableItem, colorspace):
         """
         Executes the publish logic for this plugin instance.
 
@@ -203,6 +203,7 @@ class PublishPluginInstance(PluginInstanceBase):
         """
         import os
         import re
+
 
         with self._handle_plugin_error("Publish complete!", "Error publishing: %s"):
             path = item.properties["path"]
@@ -221,6 +222,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
                 category = parts[4]
                 version = parts[5]
+
                 # Extract version information from source path
                 target_folder = os.path.join(
                     r'X:\ShotGrid_Test_jw\Project',
@@ -256,12 +258,58 @@ class PublishPluginInstance(PluginInstanceBase):
                 context = current_engine.context
                 project_id = context.project['id']
                 user_id = context.user['id']
-                filters = [
+
+                sequence = sg.find_one('Sequence', [
                     ['project', 'is', {'type': 'Project', 'id': project_id}],
+                    ['code', 'is', seq_code]
+                ], ['id'])
+
+                if not sequence:
+                    sequence_data = {
+                        'project': {'type': 'Project', 'id': project_id},
+                        'code': seq_code,
+                        'description': 'Description for the sequence',
+                    }
+                    sequence = sg.create('Sequence', sequence_data)
+                    logger.info(f"Created Sequence: {sequence}")
+
+                sequence_id = sequence['id']
+
+                existing_shots = sg.find('Shot', [
+                    ['project', 'is', {'type': 'Project', 'id': project_id}],
+                    ['sg_sequence', 'is', {'type': 'Sequence', 'id': sequence_id}],
                     ['code', 'is', shot_code]
-                ]
-                fields = ['id']
-                shot_id = sg.find_one('Shot', filters, fields)
+                ])
+
+                # shot_data by excel
+                if not existing_shots:
+                    check_items = CheckableItem.fetch_checked_items()
+                    check_item = next(item for item in check_items if item['Shot_Code'] == shot_code)
+
+                    shot_data = {
+                        'project': {'type': 'Project', 'id': project_id},
+                        'sg_sequence': {'type': 'Sequence', 'id': sequence_id},
+                        'code': shot_code,
+                        'sg_cut_in': check_item['Cut_In'],
+                        'sg_cut_out': check_item['Cut_Out'],
+                        'sg_cut_duration': check_item['Duration'],
+                        'sg_org_clip': check_item['Org_Clip'],
+                        'sg_org_resolution': check_item['Resolution'],
+                        'sg_fps': check_item['Fps'],
+                        'sg_colorspace' : colorspace
+                    }
+                    new_shot = sg.create('Shot', shot_data)
+                    shot_id = new_shot['id']
+                    logger.info(f"Created Shot: {new_shot}")
+                else:
+                    filters = [
+                        ['project', 'is', {'type': 'Project', 'id': project_id}],
+                        ['code', 'is', shot_code]
+                    ]
+                    fields = ['id']
+                    shot_id = sg.find_one('Shot', filters, fields)
+                    shot_id = shot_id['id']
+
                 upload_movie_path = target_folder + '\\temp\\'
 
                 # Set mov file path and name
@@ -272,7 +320,7 @@ class PublishPluginInstance(PluginInstanceBase):
                     file_type_id = 166
                 elif category == 'edit':
                     file_type_id = 167
-                elif category == 'src':
+                elif category.startswith("src"):
                     file_type_id = 199
 
                 if path.endswith('mov'):
@@ -281,10 +329,11 @@ class PublishPluginInstance(PluginInstanceBase):
                 else:
                     movie_file_path = upload_movie_path
                     frames_file_path = target_folder_file
+
                 # MOV file version register
                 version_data = {
                     'project': {'type': 'Project', 'id': project_id},
-                    'entity': {'type': 'Shot', 'id': shot_id['id']},  # shot or entity
+                    'entity': {'type': 'Shot', 'id': shot_id},  # shot or entity
                     'code': project_code + '_' + shot_code + '_' + category + '_' + version,  # version name
                     'sg_path_to_movie': movie_file_path,
                     'sg_path_to_frames': frames_file_path,
@@ -304,7 +353,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 # Version publish
                 publish_data = {
                     'project': {'type': 'Project', 'id': project_id},
-                    'entity': {'type': 'Shot', 'id': shot_id['id']},
+                    'entity': {'type': 'Shot', 'id': shot_id},
                     'published_file_type': {'type': 'PublishedFileType', 'id': file_type_id},
                     'path': {
                         'local_path': target_folder_file,

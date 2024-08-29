@@ -310,7 +310,7 @@ class PublishManager(object):
 
         return failed_to_validate
 
-    def publish(self, task_generator=None):
+    def publish(self, task_generator=None, CheckableItem=None, colorspace=''):
         """
         Publish items in the tree.
 
@@ -342,7 +342,7 @@ class PublishManager(object):
 
         :param task_generator: A generator of :class:`~PublishTask` instances.
         """
-        self._process_tasks(task_generator, lambda task: task.publish())
+        self._process_tasks(task_generator, lambda task: task.publish(CheckableItem, colorspace))
 
         # execute the post publish method of the phase phase hook
         self._post_phase_hook.post_publish(self.tree)

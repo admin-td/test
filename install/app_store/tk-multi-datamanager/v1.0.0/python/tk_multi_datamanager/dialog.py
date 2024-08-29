@@ -61,32 +61,35 @@ logger = sgtk.platform.get_logger(__name__)
 
 
 class CheckableItem(QtGui.QStandardItem):
-    def __init__(self, file_info_dict=''):
-        self._bundle = sgtk.platform.current_bundle()
-        self._default_directory = "X:/ShotGrid_Test_jw/Project/" + self._bundle.context.project.get("name",
-                                                                                                    "Undefined") + '/scan'
+    def __init__(self, file_info_dict='', save_func=True):
+
         super().__init__(file_info_dict['path'])
 
         # Retrieve checked items
-        checked_items = self._fetch_checked_items()
+        self.checked_items = CheckableItem.fetch_checked_items()
 
-        self.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+        if save_func:
+            self.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
 
-        if not checked_items:
-            self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
-        else:
-            # Check if the current item should be checked
-            if file_info_dict['index'] in [item['index'] for item in checked_items]:
+            if not self.checked_items:
                 self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
             else:
-                self.setData(QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+                # Check if the current item should be checked
+                if file_info_dict['index'] in [item['index'] for item in self.checked_items]:
+                    self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
+                else:
+                    self.setData(QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
 
-    def _fetch_checked_items(self):
+    @staticmethod
+    def fetch_checked_items():
         """
         Fetch checked items from the latest Excel file.
         """
+
         # Get the latest Excel file path
-        excel_file_path = self._get_latest_excel_file_path(self._default_directory)
+        bundle = sgtk.platform.current_bundle()
+        default_directory = "X:/ShotGrid_Test_jw/Project/" + bundle.context.project.get("name", "Undefined") + '/scan'
+        excel_file_path = CheckableItem._get_latest_excel_file_path(default_directory)
 
         if not excel_file_path:
             return None
@@ -377,7 +380,7 @@ class AppDialog(QtGui.QWidget):
 
     def _on_combobox_changed(self):
         self._selected_color = self.ui.comboBox.currentText()
-        logger.info(f"Selected: {self._selected_color}")
+        logger.info(f"Selected Color: {self._selected_color}")
 
     @property
     def manual_load_enabled(self):
@@ -1334,7 +1337,7 @@ class AppDialog(QtGui.QWidget):
 
             try:
                 self._publish_manager.publish(
-                    task_generator=self._publish_task_generator()
+                    task_generator=self._publish_task_generator(), CheckableItem = CheckableItem, colorspace = self._selected_color
                 )
             except Exception:
                 # ensure the full error shows up in the log file
@@ -1667,16 +1670,61 @@ class AppDialog(QtGui.QWidget):
 
         :param script_path: File path to the Nuke script to run
         """
-        nuke_executable = r"X:/Inhouse/Nuke15.0v4/Nuke15.0.exe"
+
+        config_path = r'X:\ShotGrid_Test_jw\Project\config_test'
+        tk = sgtk.sgtk_from_path(config_path)
+        sg = tk.shotgun
+
+        current_engine = sgtk.platform.current_engine()
+        context = current_engine.context
+        user_id = context.user['id']
+
+        if user_id == 319:
+            nuke_executable = r"X:/Inhouse/Nuke15.1v2/Nuke15.1.exe"
+        else:
+            nuke_executable = r"X:/Inhouse/Nuke15.0v4/Nuke15.0.exe"
 
         checked_item_paths = self._get_checked_item_paths()
-        command = [nuke_executable, '-t', script_path]
-        self._run_subprocess(command)
 
-        for path in checked_item_paths:
-            self._determine_paths(path)
+        for checked_item_path in checked_item_paths:
+            parts = checked_item_path.split('/')
+            origin_directory_path = parts[-1]
+            target_folder = None
+            if os.path.isdir(checked_item_path):
+                parts = parts[-1].split('_')
 
-        logger.info("Exit Nuke batch mode execution.")
+            # Extract the necessary parts
+            project_code = parts[0]
+            seq_code = parts[1]
+            shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
+            category = parts[4]
+            version = parts[5]
+
+            # Extract version information from source path
+            target_folder = os.path.join(
+                r'X:\ShotGrid_Test_jw\Project',
+                project_code,
+                '04_SEQ',
+                seq_code,
+                shot_code,
+                'Plates',
+                category,
+                version
+            )
+            temp_folder_path = os.path.join(target_folder, 'temp')
+            temp_folder_path = temp_folder_path.replace('\\', '/')
+            new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
+            new_output_path = new_output_path.replace('\\', '/')
+
+            if not os.path.isfile(new_output_path):
+                logger.info("Event occurred! Run the Nuke script.")
+                command = [nuke_executable, '-t', script_path]
+                self._run_subprocess(command)
+
+                for path in checked_item_paths:
+                    self._determine_paths(path)
+
+                logger.info("Exit Nuke batch mode execution.")
 
     def _get_checked_item_paths(self):
         """
@@ -1864,9 +1912,7 @@ class AppDialog(QtGui.QWidget):
         """
         Extract the first frame from a MOV file and save it as a JPG using FFmpeg.
         """
-        if os.path.isfile(jpg_path):
-            logger.info(f"This thumbnail({jpg_path}) is already exists.")
-        else:
+        if not os.path.isfile(jpg_path):
             ffmpeg_executable = r'X:\program\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe'
             logger.info(f"Extract the first frame from MOV file and save it as JPG: {mov_path} -> {jpg_path}")
 
@@ -1894,7 +1940,6 @@ class AppDialog(QtGui.QWidget):
         event_occurred = True
 
         if event_occurred:
-            logger.info("Event occurred! Run the Nuke script.")
             self._run_nuke_script(self._default_config_path)
         else:
             logger.info("No event occurred.")
@@ -1931,11 +1976,8 @@ class AppDialog(QtGui.QWidget):
                         category,
                         version
                     )
-                # If the route already exists
-                if os.path.isdir(target_folder):
-                    logger.info(f'target_folder already exists: {target_folder}')
-                else:
-                    # Copy files to target folder
+                # Copy files to target folder
+                if not os.path.isdir(target_folder):
                     self._copy_files(checked_item_path, target_folder, temp_folder_name, origin_directory_path)
 
     @staticmethod
@@ -2024,7 +2066,7 @@ class AppDialog(QtGui.QWidget):
             self._add_file_to_list(subfolder_path_dict)
 
     def _add_file_to_list(self, file_path_dict):
-        item = CheckableItem(file_path_dict)
+        item = CheckableItem(file_path_dict, True)
         self.model.appendRow(item)
 
     def _get_jpeg_files(self, directory):
@@ -2085,7 +2127,6 @@ class AppDialog(QtGui.QWidget):
             jpg_files = self._get_jpeg_files(temp_path)
 
             if not jpg_files:
-                logger.info(f'No Thumbnail image({item.text()})')
                 jpg_file = ''
             else:
                 jpg_file = jpg_files[0].replace('\\', '/')

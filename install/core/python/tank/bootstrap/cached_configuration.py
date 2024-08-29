@@ -12,6 +12,8 @@ import os
 import sys
 import traceback
 import pprint
+from doctest import debug
+from imp import new_module
 
 from . import constants
 

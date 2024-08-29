@@ -140,11 +140,11 @@ class PublishTask(object):
         """
         return self._plugin == other_task._plugin
 
-    def publish(self):
+    def publish(self, CheckableItem, colorspace):
         """
         Publish this Task
         """
-        self.plugin.run_publish(self.settings, self.item)
+        self.plugin.run_publish(self.settings, self.item, CheckableItem, colorspace)
 
     def finalize(self):
         """
