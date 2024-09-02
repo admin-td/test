@@ -246,6 +246,10 @@ class Dialog(QtGui.QWidget):
             context=self._context,
             base_class=self._bundle.base_hooks.ReviewSettings,
         )
+        fields_dict['slate'] = [
+            item if not item.startswith('User:') else f"User: {item.split()[-1]}"
+            for item in fields_dict['slate']
+        ]
 
         # set up burnins
         # self._group_node.node("top_left_text")["message"].setValue(
@@ -291,6 +295,12 @@ class Dialog(QtGui.QWidget):
         mov_path = mov_path.replace(os.sep, "/")
         mov_out["file"].setValue(mov_path)
 
+        for node in nuke.allNodes():
+            if node.name() == 'FlowProductionTrackingQuickReview':
+                write_node = node.input(0)
+                for knob in write_node.knobs():
+                    mov_out[knob].setValue(write_node[knob].value())
+
         # apply the Write node codec settings we'll use for generating the Quicktime
         self._bundle.execute_hook_method(
             "settings_hook",
@@ -309,6 +319,7 @@ class Dialog(QtGui.QWidget):
             nuke.executeMultiple(
                 [mov_out], ([start_frame - 1, end_frame, 1],), [first_view]
             )
+            return mov_out
         finally:
             # turn off the nodes again
             mov_out.knob("disable").setValue(True)
@@ -419,7 +430,8 @@ class Dialog(QtGui.QWidget):
             raise ValueError("Could not determine frame range values from UI.")
 
         # and render!
-        self._render(mov_path, start_frame, end_frame)
+        mov_out = self._render(mov_path, start_frame, end_frame)
+        mov_path = mov_out["file"].value()
 
         # create sg version
         data = {
