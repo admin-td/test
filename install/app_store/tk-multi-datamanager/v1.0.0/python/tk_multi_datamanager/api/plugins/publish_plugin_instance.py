@@ -281,11 +281,11 @@ class PublishPluginInstance(PluginInstanceBase):
                     ['code', 'is', shot_code]
                 ])
 
+                check_items = CheckableItem.fetch_checked_items()
+                check_item = next(item for item in check_items if item['Shot_Code'] == shot_code)
+
                 # shot_data by excel
                 if not existing_shots:
-                    check_items = CheckableItem.fetch_checked_items()
-                    check_item = next(item for item in check_items if item['Shot_Code'] == shot_code)
-
                     shot_data = {
                         'project': {'type': 'Project', 'id': project_id},
                         'sg_sequence': {'type': 'Sequence', 'id': sequence_id},
@@ -309,6 +309,20 @@ class PublishPluginInstance(PluginInstanceBase):
                     fields = ['id']
                     shot_id = sg.find_one('Shot', filters, fields)
                     shot_id = shot_id['id']
+
+                    shot_data = {
+                        'project': {'type': 'Project', 'id': project_id},
+                        'sg_sequence': {'type': 'Sequence', 'id': sequence_id},
+                        'code': shot_code,
+                        'sg_cut_in': check_item['Cut_In'],
+                        'sg_cut_out': check_item['Cut_Out'],
+                        'sg_cut_duration': check_item['Duration'],
+                        'sg_org_clip': check_item['Org_Clip'],
+                        'sg_org_resolution': check_item['Resolution'],
+                        'sg_fps': check_item['Fps'],
+                        'sg_colorspace': colorspace
+                    }
+                    sg.update('Shot', shot_id, shot_data)
 
                 upload_movie_path = target_folder + '\\temp\\'
 
