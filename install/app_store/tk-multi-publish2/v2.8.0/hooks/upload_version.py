@@ -214,6 +214,10 @@ class UploadVersionPlugin(HookBaseClass):
             path_components = publisher.util.get_file_path_components(path)
             publish_name = path_components["filename"]
 
+        if publish_name.endswith(".mov"):
+            publish_name = publish_name[:-4]
+
+        publish_name = item.context.project['name'] + '_' + publish_name
         self.logger.debug("Publish name: %s" % (publish_name,))
 
         self.logger.info("Creating Version...")

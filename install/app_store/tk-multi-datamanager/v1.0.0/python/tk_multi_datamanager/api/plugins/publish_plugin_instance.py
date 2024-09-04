@@ -363,6 +363,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 logger.info(f"Created Version details: {new_version}")
 
                 thumbnail_path =  item.get_thumbnail_as_path(),
+                publish_name = publish_code[-1].split('_', 1)[1]
 
                 # Version publish
                 publish_data = {
@@ -373,7 +374,7 @@ class PublishPluginInstance(PluginInstanceBase):
                         'local_path': target_folder_file,
                         'type': 'Path',  # Path type(ex: 'Path', 'Link'..)
                     },
-                    'code': publish_code[-1],
+                    'code': publish_name,
                     'version': new_version,
                     'image' : thumbnail_path[0],
                     'description' : item.description,
