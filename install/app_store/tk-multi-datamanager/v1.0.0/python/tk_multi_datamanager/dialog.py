@@ -199,6 +199,7 @@ class AppDialog(QtGui.QWidget):
 
         self.ui.comboBox.addItem("ACES - ACEScg")
         self.ui.comboBox.addItem("AlexaV3LogC")
+        self.ui.comboBox.addItem("AlexaV4LogC")
         self.ui.comboBox.addItem("rec709")
         self.ui.comboBox.addItem("sRGB")
         self.ui.comboBox.addItem("legacy")
@@ -744,10 +745,10 @@ class AppDialog(QtGui.QWidget):
             self.ui.item_thumbnail.show()
             self.ui.item_thumbnail.setEnabled(False)
 
-        else:
-            # hide thumbnail
-            self.ui.item_thumbnail_label.hide()
-            self.ui.item_thumbnail.hide()
+        # else:
+        #     # hide thumbnail
+        #     self.ui.item_thumbnail_label.hide()
+        #     self.ui.item_thumbnail.hide()
 
         self.ui.item_description_label.setText("Description")
 

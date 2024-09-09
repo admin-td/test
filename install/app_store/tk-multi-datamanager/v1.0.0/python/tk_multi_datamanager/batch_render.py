@@ -397,6 +397,77 @@ def AlexaV3_Seq():
     print(f"Read node created for sequence: {sequence_path}")
     print(f"Original range set to: {first_frame} - {last_frame}")
 
+def AlexaV4_Seq():
+    not_mov_files.sort()
+    parts = retrieved_item['path'].split('/')
+    origin_directory_path = parts[-1]
+
+    first_file = not_mov_files[0]
+    match = re.search(r'(.*?)(\d+)\.(dpx|exr)$', first_file)
+    prefix = match.group(1)
+    number_str = match.group(2)
+    suffix = match.group(3)
+    num_digits = len(number_str)
+    format_specifier = f"%0{num_digits}d"
+    sequence_path = os.path.join(retrieved_item['path'], f"{prefix}{format_specifier}.{suffix}")
+    sequence_path = sequence_path.replace('\\', '/')
+
+    first_frame = int(number_str)
+    last_frame = first_frame + len(not_mov_files) - 1
+
+    root['first_frame'].setValue(first_frame)
+    root['last_frame'].setValue(last_frame)
+    root['fps'].setValue(float(fps_number))
+    root['format'].setValue(new_format)
+
+    read_node = nuke.createNode('Read')
+    read_node['file'].setValue(sequence_path)
+    read_node['first'].setValue(first_frame)
+    read_node['last'].setValue(last_frame)
+    read_node['origfirst'].setValue(first_frame)
+    read_node['origlast'].setValue(last_frame)
+    read_node['format'].setValue(new_format)
+    read_node['colorspace'].setValue('rec709')
+
+    ocio_colorspace_node = nuke.createNode('OCIOColorSpace')
+    ocio_colorspace_node['in_colorspace'].setValue('linear')
+    ocio_colorspace_node['out_colorspace'].setValue('rec709')
+    ocio_colorspace_node.setInput(0, read_node)
+
+    ocio_file_transform_node = nuke.createNode('OCIOFileTransform')
+    ocio_file_transform_node['file'].setValue('X:/_PMO/ColorSpace/AlexaV4LogC/ARRI_LogC4-to-Gamma24_Rec709-D65_v1-65.cube')
+    ocio_file_transform_node['working_space'].setValue('linear')
+    ocio_file_transform_node.setInput(0, ocio_colorspace_node)
+
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
+    temp_folder_path = temp_folder_path.replace('\\', '/')
+
+    if not os.path.exists(temp_folder_path):
+        os.makedirs(temp_folder_path)
+        subprocess.call(['attrib', '+h', temp_folder_path])
+
+    prefix = prefix[:-1]
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
+    new_output_path = new_output_path.replace('\\', '/')
+
+    # if os.path.isfile(new_output_path):
+    #     print(f'This file({new_output_path}) is already exists.')
+    # else:
+    write_node = nuke.createNode('Write')
+    write_node['file_type'].setValue('mov')
+    write_node['file'].setValue(new_output_path)
+    write_node['colorspace'].setValue('linear')
+    write_node['mov64_codec'].setValue('AVdh\tAvid DNxHR')
+    write_node['mov64_fps'].setValue(float(fps_number))
+    write_node['mov64_dnxhr_codec_profile'].setValue('HQX 4:2:2 12-bit')
+
+    write_node.setInput(0, ocio_file_transform_node)
+
+    nuke.execute(write_node, first_frame, last_frame)
+
+    print(f"Read node created for sequence: {sequence_path}")
+    print(f"Original range set to: {first_frame} - {last_frame}")
 
 def rec709_Mov():
     parts = retrieved_item['path'].split('/')
@@ -767,6 +838,8 @@ if __name__ == '__main__':
                         ACEScg_Seq()
                     elif retrieved_item['colorspace'] == 'AlexaV3LogC':
                         AlexaV3_Seq()
+                    elif retrieved_item['colorspace'] == 'AlexaV4LogC':
+                        AlexaV4_Seq()
                     elif retrieved_item['colorspace'] == 'rec709':
                         rec709_Seq()
                     elif retrieved_item['colorspace'] == 'sRGB':
@@ -785,6 +858,8 @@ if __name__ == '__main__':
                         ACEScg_Seq()
                     elif retrieved_item['colorspace'] == 'AlexaV3LogC':
                         AlexaV3_Seq()
+                    elif retrieved_item['colorspace'] == 'AlexaV4LogC':
+                        AlexaV4_Seq()
                     elif retrieved_item['colorspace'] == 'rec709':
                         rec709_Seq()
                     elif retrieved_item['colorspace'] == 'sRGB':

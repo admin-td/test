@@ -886,7 +886,7 @@ class FileSaveForm(FileFormBase):
                 sg.update('Task', task_id, status_data)
                 file_content = str(sg_data)
                 comp_index = path_to_save.find('Comp')
-                notepad_path = path_to_save[:comp_index] + 'editorial\\test.txt'
+                notepad_path = path_to_save[:comp_index] + 'editorial\\save_log.txt'
                 self.save_to_notepad(notepad_path, file_content)
 
             except Exception:
