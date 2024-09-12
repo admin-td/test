@@ -295,13 +295,16 @@ class Dialog(QtGui.QWidget):
         # setup output quicktime path
         mov_out = self._group_node.node("mov_writer")
         mov_path = mov_path.replace(os.sep, "/")
-        mov_out["file"].setValue(mov_path)
 
         for node in nuke.allNodes():
             if node.name() == 'FlowProductionTrackingQuickReview':
                 write_node = node.input(0)
                 for knob in write_node.knobs():
-                    mov_out[knob].setValue(write_node[knob].value())
+                    if knob == 'name':
+                        continue
+                    else:
+                        mov_out[knob].setValue(write_node[knob].value())
+        mov_out["file"].setValue(mov_path)
 
         # apply the Write node codec settings we'll use for generating the Quicktime
         self._bundle.execute_hook_method(
