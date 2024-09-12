@@ -92,21 +92,21 @@ def ACES_2065_1_Seq():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
+    if not os.path.isfile(new_output_path):
+        # print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['mov64_fps'].setValue(float(fps_number))
-    write_node['colorspace'].setValue('ACES - ACES2065-1')
-    write_node['raw'].setValue(True)
-    write_node.setInput(0, ocio_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['mov64_fps'].setValue(float(fps_number))
+        write_node['colorspace'].setValue('ACES - ACES2065-1')
+        write_node['raw'].setValue(True)
+        write_node.setInput(0, ocio_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for sequence: {sequence_path}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for sequence: {sequence_path}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def ACES_2065_1_Mov():
@@ -145,21 +145,21 @@ def ACES_2065_1_Mov():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
+    if not os.path.isfile(new_output_path):
+        # print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['mov64_fps'].setValue(float(fps_number))
-    write_node['colorspace'].setValue('ACES - ACES2065-1')
-    write_node['raw'].setValue(True)
-    write_node.setInput(0, ocio_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['mov64_fps'].setValue(float(fps_number))
+        write_node['colorspace'].setValue('ACES - ACES2065-1')
+        write_node['raw'].setValue(True)
+        write_node.setInput(0, ocio_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for mov: {retrieved_item['path']}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for mov: {retrieved_item['path']}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def ACEScg_Seq():
@@ -213,23 +213,23 @@ def ACEScg_Seq():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
+    if not os.path.isfile(new_output_path):
+        # print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['mov64_fps'].setValue(float(fps_number))
-    write_node['raw'].setValue(True)
-    write_node['mov64_codec'].setValue(r'h264\tH.264')
-    write_node['mov64_quality'].setValue('Custom')
-    write_node['colorspace'].setValue('Output - Rec.709')
-    write_node.setInput(0, ocio_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['mov64_fps'].setValue(float(fps_number))
+        write_node['raw'].setValue(True)
+        write_node['mov64_codec'].setValue(r'h264\tH.264')
+        write_node['mov64_quality'].setValue('Custom')
+        write_node['colorspace'].setValue('Output - Rec.709')
+        write_node.setInput(0, ocio_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for sequence: {sequence_path}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for sequence: {sequence_path}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def ACEScg_Mov():
@@ -269,23 +269,23 @@ def ACEScg_Mov():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
+    if not os.path.isfile(new_output_path):
+        # print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['mov64_fps'].setValue(float(fps_number))
-    write_node['raw'].setValue(True)
-    write_node['mov64_codec'].setValue(r'h264\tH.264')
-    write_node['mov64_quality'].setValue('Custom')
-    write_node['colorspace'].setValue('Output - Rec.709')
-    write_node.setInput(0, ocio_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['mov64_fps'].setValue(float(fps_number))
+        write_node['raw'].setValue(True)
+        write_node['mov64_codec'].setValue(r'h264\tH.264')
+        write_node['mov64_quality'].setValue('Custom')
+        write_node['colorspace'].setValue('Output - Rec.709')
+        write_node.setInput(0, ocio_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for mov: {retrieved_item['path']}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for mov: {retrieved_item['path']}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def AlexaV3_Mov():
@@ -322,19 +322,19 @@ def AlexaV3_Mov():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
+    if not os.path.isfile(new_output_path):
+        # print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['colorspace'].setValue('rec709')
-    write_node.setInput(0, ocio_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('rec709')
+        write_node.setInput(0, ocio_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for mov: {retrieved_item['path']}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for mov: {retrieved_item['path']}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def AlexaV3_Seq():
@@ -451,23 +451,23 @@ def AlexaV4_Seq():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
+    if not os.path.isfile(new_output_path):
     #     print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['colorspace'].setValue('linear')
-    write_node['mov64_codec'].setValue('AVdh\tAvid DNxHR')
-    write_node['mov64_fps'].setValue(float(fps_number))
-    write_node['mov64_dnxhr_codec_profile'].setValue('HQX 4:2:2 12-bit')
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('linear')
+        write_node['mov64_codec'].setValue('AVdh\tAvid DNxHR')
+        write_node['mov64_fps'].setValue(float(fps_number))
+        write_node['mov64_dnxhr_codec_profile'].setValue('HQX 4:2:2 12-bit')
 
-    write_node.setInput(0, ocio_file_transform_node)
+        write_node.setInput(0, ocio_file_transform_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for sequence: {sequence_path}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for sequence: {sequence_path}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 def rec709_Mov():
     parts = retrieved_item['path'].split('/')
@@ -500,16 +500,16 @@ def rec709_Mov():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
+    if not os.path.isfile(new_output_path):
+        print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['colorspace'].setValue('rec709')
-    write_node.setInput(0, read_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('rec709')
+        write_node.setInput(0, read_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
     print(f"Read node created for mov: {retrieved_item['path']}")
     print(f"Original range set to: {first_frame} - {last_frame}")
@@ -558,19 +558,19 @@ def rec709_Seq():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
+    if not os.path.isfile(new_output_path):
     #     print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['colorspace'].setValue('rec709')
-    write_node.setInput(0, read_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('rec709')
+        write_node.setInput(0, read_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for sequence: {sequence_path}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for sequence: {sequence_path}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def sRGB_Mov():
@@ -602,19 +602,19 @@ def sRGB_Mov():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
-    #     print(f'This file({new_output_path}) is already exists.')
-    # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['colorspace'].setValue('sRGB')
-    write_node.setInput(0, read_node)
+    if not os.path.isfile(new_output_path):
+        print(f'This file({new_output_path}) is already exists.')
+    else:
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('sRGB')
+        write_node.setInput(0, read_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for mov: {retrieved_item['path']}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for mov: {retrieved_item['path']}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 def sRGB_Seq():
     not_mov_files.sort()
@@ -660,19 +660,19 @@ def sRGB_Seq():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
+    if not os.path.isfile(new_output_path):
     #     print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    write_node['colorspace'].setValue('sRGB')
-    write_node.setInput(0, read_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('sRGB')
+        write_node.setInput(0, read_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for sequence: {sequence_path}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for sequence: {sequence_path}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 def legacy_Seq():
     not_mov_files.sort()
@@ -715,20 +715,20 @@ def legacy_Seq():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
+    if not os.path.isfile(new_output_path):
     #     print(f'This file({new_output_path}) is already exists.')
     # else:
-    write_node = nuke.createNode('Write')
-    write_node['file_type'].setValue('mov')
-    write_node['file'].setValue(new_output_path)
-    read_colorspace = read_node['colorspace'].value()
-    write_node['colorspace'].setValue(read_colorspace)
-    write_node.setInput(0, read_node)
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        read_colorspace = read_node['colorspace'].value()
+        write_node['colorspace'].setValue(read_colorspace)
+        write_node.setInput(0, read_node)
 
-    nuke.execute(write_node, first_frame, last_frame)
+        nuke.execute(write_node, first_frame, last_frame)
 
-    print(f"Read node created for sequence: {sequence_path}")
-    print(f"Original range set to: {first_frame} - {last_frame}")
+        print(f"Read node created for sequence: {sequence_path}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
 
 
 def legacy_Mov():
@@ -749,11 +749,11 @@ def legacy_Mov():
     new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}_{default_file_name}')
     new_output_path = new_output_path.replace('\\', '/')
 
-    # if os.path.isfile(new_output_path):
+    if not os.path.isfile(new_output_path):
     #     print(f'This file({new_output_path}) is already exists.')
     # else:
-    shutil.copy2(retrieved_item['path'], new_output_path)
-    print(f'Copied {retrieved_item["path"]} to {new_output_path}')
+        shutil.copy2(retrieved_item['path'], new_output_path)
+        print(f'Copied {retrieved_item["path"]} to {new_output_path}')
 
 
 if __name__ == '__main__':

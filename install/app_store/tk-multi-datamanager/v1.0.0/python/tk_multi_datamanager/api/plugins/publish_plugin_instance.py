@@ -268,7 +268,6 @@ class PublishPluginInstance(PluginInstanceBase):
                     sequence_data = {
                         'project': {'type': 'Project', 'id': project_id},
                         'code': seq_code,
-                        'description': 'Description for the sequence',
                     }
                     sequence = sg.create('Sequence', sequence_data)
                     logger.info(f"Created Sequence: {sequence}")
