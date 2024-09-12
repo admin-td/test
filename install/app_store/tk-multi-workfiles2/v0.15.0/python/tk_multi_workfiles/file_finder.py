@@ -276,7 +276,7 @@ class FileFinder(QtCore.QObject):
         if work_files:
             original_path = work_files[0] or None
             comp_index = original_path['path'].find('Comp')
-            notepad_path = original_path['path'][:comp_index] + 'editorial\\test.txt' or None
+            notepad_path = original_path['path'][:comp_index] + 'editorial\\save_log.txt' or None
             content = self.read_notepad(notepad_path)
             matches = self.extract_version_and_author(content)
 

@@ -26,12 +26,9 @@ from .progress import ProgressHandler
 from .summary_overlay import SummaryOverlay
 from .publish_tree_widget import TreeNodeItem, TreeNodeTask, TopLevelTreeNodeItem
 
-browse_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
-                    r"\browse.png")
-scan_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
-                  r"\browse_menu.png")
-copy_icon_path = (r"X:\ShotGrid_Test_jw\Project\config_test\install\app_store\tk-multi-datamanager\v1.0.0\resources"
-                  r"\image_sequence.png")
+browse_icon_path = (r"X:\Inhouse\tool\icon\browse.png")
+scan_icon_path = (r"X:\Inhouse\tool\icon\browse_menu.png")
+copy_icon_path = (r"X:\Inhouse\tool\icon\image_sequence.png")
 venv_path = r'X:\Inhouse\Python\.venv\Lib\site-packages'
 sys.path.append(venv_path)
 
@@ -75,10 +72,12 @@ class CheckableItem(QtGui.QStandardItem):
                 self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
             else:
                 # Check if the current item should be checked
-                if file_info_dict['index'] in [item['index'] for item in self.checked_items]:
-                    self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
-                else:
-                    self.setData(QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+                for item in self.checked_items:
+                    if item['Shot_Code'] + '_' + item['Type'] in file_info_dict['path']:
+                        self.setData(QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
+                        break
+                    else:
+                        self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
 
     @staticmethod
     def fetch_checked_items():
@@ -2084,6 +2083,45 @@ class AppDialog(QtGui.QWidget):
                     jpg_files.append(os.path.join(root, file))
         return jpg_files
 
+    def _get_excel_data(self):
+        bundle = sgtk.platform.current_bundle()
+        default_directory = "X:/ShotGrid_Test_jw/Project/" + bundle.context.project.get("name", "Undefined") + '/scan'
+
+        base_name = "scan_list_"
+        ext = ".xlsx"
+
+        # Find all files in the directory that match the base name and extension
+        existing_files = [f for f in os.listdir(default_directory) if f.startswith(base_name) and f.endswith(ext)]
+
+        if not existing_files:
+            return None
+
+        # Extract numbers from filenames and find the highest number
+        numbers = [int(re.findall(r'\d+', f[len(base_name):])[0]) for f in existing_files if
+                   re.findall(r'\d+', f[len(base_name):])]
+        max_number = max(numbers) if numbers else 1
+        next_file_name = f"{base_name}{max_number:02d}{ext}"
+
+        excel_file_path = os.path.join(default_directory, next_file_name)
+
+        if not excel_file_path:
+            return None
+
+        # Read the Excel file
+        df = pd.read_excel(excel_file_path)
+
+        # Filter checked and unchecked rows
+        checked_df = df[df['Check'] == 'checked']
+        unchecked_df = df[df['Check'] == 'unchecked']
+
+        # Create a list of dictionaries containing index and row data for checked items
+        checked_items_list = [{'index': idx, **row} for idx, row in checked_df.iterrows()]
+        unchecked_items_list = [{'index': idx, **row} for idx, row in unchecked_df.iterrows()]
+        all_items_list = checked_items_list + unchecked_items_list
+
+        return all_items_list
+
+
     def _save_checked_items_to_excel(self):
         excel_item_list = []
 
@@ -2149,7 +2187,7 @@ class AppDialog(QtGui.QWidget):
             excel_item['Thumbnail'] = jpg_file
             excel_item['Sequence'] = sequence_code or ''
             excel_item['Shot'] = shot_code or ''
-            excel_item['Path'] = item.text()
+            excel_item['Type'] = category
 
             if first_file.endswith('mov'):
                 first_frame = metadata['first_frame'] + 1000
@@ -2188,8 +2226,8 @@ class AppDialog(QtGui.QWidget):
             sheet.title = "Items"
 
             # Add header
-            headers = ["Thumbnail", "Sequence", "Shot_Code", "Cut_In", "Cut_Out", "Duration", "Org_Clip", "Resolution",
-                       "Fps", "Check"]
+            headers = ["Thumbnail", "Sequence", "Shot_Code", "Type", "Cut_In", "Cut_Out", "Duration", "Org_Clip",
+                       "Resolution", "Fps", "Check"]
             gray_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
             border = Border(left=Side(style='thin'),
                             right=Side(style='thin'),
@@ -2202,11 +2240,13 @@ class AppDialog(QtGui.QWidget):
                 cell.border = border
                 cell.font = Font(bold=True)
 
-            # Add excel_item_list data starting from the second row
+            checked_items = self._get_excel_data()
+
             for idx, item in enumerate(excel_item_list, start=2):
                 thumbnail_path = item.get('Thumbnail')
                 sequence = item.get('Sequence')
                 shot = item.get('Shot')
+                type = item.get('Type')
                 check = item.get('Check')
                 cut_in = item.get('Cut_In')
                 cut_out = item.get('Cut_Out')
@@ -2214,6 +2254,12 @@ class AppDialog(QtGui.QWidget):
                 original_clip = item.get('Org_Clip')
                 resolution = item.get('Resolution')
                 fps = item.get('Fps')
+
+                if checked_items:
+                    for checked_item in checked_items:
+                        if checked_item["Shot_Code"] + '_' + checked_item["Type"] == shot + '_' + type:
+                            if checked_item["Check"] == 'checked':
+                                check = checked_item["Check"]
 
                 if thumbnail_path and os.path.isfile(thumbnail_path):
                     img = Image(thumbnail_path)
@@ -2235,19 +2281,21 @@ class AppDialog(QtGui.QWidget):
                 sequence_cell.border = border
                 shot_cell = sheet.cell(row=idx, column=3, value=shot)
                 shot_cell.border = border
-                cut_in_cell = sheet.cell(row=idx, column=4, value=cut_in)
+                type_cell = sheet.cell(row=idx, column=4, value=type)
+                type_cell.border = border
+                cut_in_cell = sheet.cell(row=idx, column=5, value=cut_in)
                 cut_in_cell.border = border
-                cut_out_cell = sheet.cell(row=idx, column=5, value=cut_out)
+                cut_out_cell = sheet.cell(row=idx, column=6, value=cut_out)
                 cut_out_cell.border = border
-                duration_cell = sheet.cell(row=idx, column=6, value=duration)
+                duration_cell = sheet.cell(row=idx, column=7, value=duration)
                 duration_cell.border = border
-                original_clip_cell = sheet.cell(row=idx, column=7, value=original_clip)
+                original_clip_cell = sheet.cell(row=idx, column=8, value=original_clip)
                 original_clip_cell.border = border
-                resolution_cell = sheet.cell(row=idx, column=8, value=resolution)
+                resolution_cell = sheet.cell(row=idx, column=9, value=resolution)
                 resolution_cell.border = border
-                fps_cell = sheet.cell(row=idx, column=9, value=fps)
+                fps_cell = sheet.cell(row=idx, column=10, value=fps)
                 fps_cell.border = border
-                check_cell = sheet.cell(row=idx, column=10, value=check)
+                check_cell = sheet.cell(row=idx, column=11, value=check)
                 check_cell.border = border
 
                 # path_cell = sheet.cell(row=idx, column=7, value=item_path)
