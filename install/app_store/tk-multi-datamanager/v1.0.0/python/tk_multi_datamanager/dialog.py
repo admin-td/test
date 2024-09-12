@@ -1689,16 +1689,17 @@ class AppDialog(QtGui.QWidget):
         for checked_item_path in checked_item_paths:
             parts = checked_item_path.split('/')
             origin_directory_path = parts[-1]
+            project_code = parts[3]
             target_folder = None
             if os.path.isdir(checked_item_path):
                 parts = parts[-1].split('_')
 
             # Extract the necessary parts
-            project_code = parts[0]
-            seq_code = parts[1]
-            shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-            category = parts[4]
-            version = parts[5]
+
+            seq_code = parts[0]
+            shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+            category = parts[3]
+            version = parts[4]
 
             # Extract version information from source path
             target_folder = os.path.join(
@@ -1862,6 +1863,7 @@ class AppDialog(QtGui.QWidget):
         Determine the MOV and JPG paths based on the given path.
         """
         parts = path.split('/')
+        project_code = parts[3]
 
         if os.path.isdir(path):
             parts = parts[-1].split('_')
@@ -1869,11 +1871,10 @@ class AppDialog(QtGui.QWidget):
             logger.error('Path does not exist')
 
         # Extract the necessary parts
-        project_code = parts[0]
-        seq_code = parts[1]
-        shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-        category = parts[4]
-        version = parts[5]
+        seq_code = parts[0]
+        shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+        category = parts[3]
+        version = parts[4]
 
         # Extract version information from source path
         target_folder = os.path.join(
@@ -1953,15 +1954,15 @@ class AppDialog(QtGui.QWidget):
             if os.path.isdir(checked_item_path):
                 temp_folder_name = 'temp'
                 parts = checked_item_path.split('/')
+                project_code = parts[3]
                 origin_directory_path = parts[-1]
-                parts = parts[-1].split('_')
+                parts = origin_directory_path.split('_')
 
                 # Extract the necessary parts
-                project_code = parts[0]
-                seq_code = parts[1]
-                shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-                category = parts[4]
-                version = parts[5]
+                seq_code = parts[0]
+                shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+                category = parts[3]
+                version = parts[4]
 
                 # Extract version information from source path
                 folder_name = os.path.basename(checked_item_path)
@@ -2141,14 +2142,14 @@ class AppDialog(QtGui.QWidget):
                 temp_folder_name = 'temp'
                 parts = checked_item_path.split('/')
                 origin_directory_path = parts[-1]
+                project_code = parts[3]
                 parts = parts[-1].split('_')
 
                 # Extract the necessary parts
-                project_code = parts[0]
-                seq_code = parts[1]
-                shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-                category = parts[4]
-                version = parts[5]
+                seq_code = parts[0]
+                shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+                category = parts[3]
+                version = parts[4]
 
                 # Extract version information from source path
                 target_folder = os.path.join(
@@ -2181,8 +2182,8 @@ class AppDialog(QtGui.QWidget):
             path_segments = item.text().split("/")
             folder_name = path_segments[6]
             parts = folder_name.split("_")
-            sequence_code = parts[1]
-            shot_code = "_".join(parts[1:4])
+            sequence_code = parts[0]
+            shot_code = "_".join(parts[0:3])
 
             excel_item['Thumbnail'] = jpg_file
             excel_item['Sequence'] = sequence_code or ''

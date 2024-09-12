@@ -15,6 +15,7 @@ import datetime
 from sgtk.platform.qt import QtCore, QtGui
 from tank_vendor import six
 import nuke
+import re
 
 from .ui.dialog import Ui_Dialog
 
@@ -47,9 +48,9 @@ class Dialog(QtGui.QWidget):
         self._context = self._bundle.context
         self._title = self._generate_title()
         self._none_date_title = self._title.split(',')[0]
-        self._none_date_title = self._none_date_title.replace(' ', '_')
-        self._version_title = self._context.project['name'] + '_' + self._none_date_title
-        self._version_title = self._version_title.replace("Ep", "EP")
+        self._version_title = self._none_date_title.replace(' ', '_')
+        if re.match(r"Ep\d{2}", self._version_title):
+            self._version_title = self._version_title.replace("Ep", "EP")
         self._task_manager = task_manager.BackgroundTaskManager(
             parent=self, start_processing=True, max_threads=2
         )

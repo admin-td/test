@@ -10,17 +10,18 @@ def convert_to_copy_path(path):
     """
     parts = path.split('/')
     target_folder = None
+    project_code = parts[3]
+
     if os.path.isdir(path):
         parts = parts[-1].split('_')
     else:
         parts = parts[-2].split('_')
 
     # Extract the necessary parts
-    project_code = parts[0]
-    seq_code = parts[1]
-    shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-    category = parts[4]
-    version = parts[5]
+    seq_code = parts[0]
+    shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+    category = parts[3]
+    version = parts[4]
 
     # Extract version information from source path
     target_folder = os.path.join(
@@ -769,16 +770,16 @@ if __name__ == '__main__':
 
         parts = retrieved_item['path'].split('/')
         origin_directory_path = parts[-1]
+        project_code = parts[3]
         target_folder = None
         if os.path.isdir(retrieved_item['path']):
             parts = parts[-1].split('_')
 
         # Extract the necessary parts
-        project_code = parts[0]
-        seq_code = parts[1]
-        shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-        category = parts[4]
-        version = parts[5]
+        seq_code = parts[0]
+        shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+        category = parts[3]
+        version = parts[4]
 
         # Extract version information from source path
         target_folder = os.path.join(

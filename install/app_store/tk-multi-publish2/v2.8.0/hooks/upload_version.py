@@ -217,7 +217,6 @@ class UploadVersionPlugin(HookBaseClass):
         if publish_name.endswith(".mov"):
             publish_name = publish_name[:-4]
 
-        publish_name = item.context.project['name'] + '_' + publish_name
         self.logger.debug("Publish name: %s" % (publish_name,))
 
         self.logger.info("Creating Version...")

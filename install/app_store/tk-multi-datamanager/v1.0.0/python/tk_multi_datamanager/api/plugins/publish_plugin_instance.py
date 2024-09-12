@@ -212,16 +212,15 @@ class PublishPluginInstance(PluginInstanceBase):
             if 'Upload' not in settings:
                 checked_item_path = folder_path.replace('\\', '/')
                 parts = checked_item_path.split('/')
-
+                project_code = parts[3]
                 if os.path.isdir(checked_item_path):
                     parts = parts[-1].split('_')
 
                 # Extract the necessary parts
-                project_code = parts[0]
-                seq_code = parts[1]
-                shot_code = parts[1] + '_' + parts[2] + '_' + parts[3]
-                category = parts[4]
-                version = parts[5]
+                seq_code = parts[0]
+                shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+                category = parts[3]
+                version = parts[4]
 
                 # Extract version information from source path
                 target_folder = os.path.join(
@@ -295,7 +294,8 @@ class PublishPluginInstance(PluginInstanceBase):
                         'sg_org_clip': check_item['Org_Clip'],
                         'sg_org_resolution': check_item['Resolution'],
                         'sg_fps': check_item['Fps'],
-                        'sg_colorspace' : colorspace
+                        'sg_colorspace' : colorspace,
+                        "task_template": {"type": "TaskTemplate", "id": 46}
                     }
                     new_shot = sg.create('Shot', shot_data)
                     shot_id = new_shot['id']
@@ -347,7 +347,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 version_data = {
                     'project': {'type': 'Project', 'id': project_id},
                     'entity': {'type': 'Shot', 'id': shot_id},  # shot or entity
-                    'code': project_code + '_' + shot_code + '_' + category + '_' + version,  # version name
+                    'code': shot_code + '_' + category + '_' + version,  # version name
                     'sg_path_to_movie': movie_file_path,
                     'sg_path_to_frames': frames_file_path,
                     'sg_version_type' : category
@@ -362,8 +362,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 logger.info(f"Created Version details: {new_version}")
 
                 thumbnail_path =  item.get_thumbnail_as_path(),
-                publish_name = publish_code[-1].split('_', 1)[1]
-
+                publish_name = publish_code[-1]
                 # Version publish
                 publish_data = {
                     'project': {'type': 'Project', 'id': project_id},
