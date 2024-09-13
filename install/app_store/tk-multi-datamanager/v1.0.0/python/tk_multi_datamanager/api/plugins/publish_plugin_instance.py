@@ -213,14 +213,23 @@ class PublishPluginInstance(PluginInstanceBase):
                 checked_item_path = folder_path.replace('\\', '/')
                 parts = checked_item_path.split('/')
                 project_code = parts[3]
-                if os.path.isdir(checked_item_path):
-                    parts = parts[-1].split('_')
+                origin_directory_path = parts[-1]
 
-                # Extract the necessary parts
-                seq_code = parts[0]
-                shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
-                category = parts[3]
-                version = parts[4]
+                if os.path.isdir(checked_item_path):
+                    parts = origin_directory_path.split('_')
+                    # Extract the necessary parts
+                    # Drama
+                    if origin_directory_path.startswith("EP"):
+                        seq_code = parts[0]
+                        shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+                        category = parts[3]
+                        version = parts[4]
+                    # Movie
+                    else:
+                        seq_code = parts[0]
+                        shot_code = parts[0] + '_' + parts[1]
+                        category = parts[2]
+                        version = parts[3]
 
                 # Extract version information from source path
                 target_folder = os.path.join(

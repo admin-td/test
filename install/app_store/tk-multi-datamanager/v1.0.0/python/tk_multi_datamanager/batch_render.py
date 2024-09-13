@@ -13,15 +13,25 @@ def convert_to_copy_path(path):
     project_code = parts[3]
 
     if os.path.isdir(path):
-        parts = parts[-1].split('_')
+        origin_directory_path = parts[-1]
+        parts = origin_directory_path.split('_')
     else:
-        parts = parts[-2].split('_')
+        origin_directory_path = parts[-2]
+        parts = origin_directory_path.split('_')
 
     # Extract the necessary parts
-    seq_code = parts[0]
-    shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
-    category = parts[3]
-    version = parts[4]
+    # Drama
+    if origin_directory_path.startswith("EP"):
+        seq_code = parts[0]
+        shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+        category = parts[3]
+        version = parts[4]
+    # Movie
+    else:
+        seq_code = parts[0]
+        shot_code = parts[0] + '_' + parts[1]
+        category = parts[2]
+        version = parts[3]
 
     # Extract version information from source path
     target_folder = os.path.join(
@@ -470,6 +480,69 @@ def AlexaV4_Seq():
         print(f"Read node created for sequence: {sequence_path}")
         print(f"Original range set to: {first_frame} - {last_frame}")
 
+def AlexaV4_Mov():
+    parts = retrieved_item['path'].split('/')
+    origin_directory_path = parts[-2]
+
+    default_directory = os.path.dirname(retrieved_item['path'])
+    default_file_name = os.path.basename(retrieved_item['path'])
+
+    root['first_frame'].setValue(first_frame)
+    root['last_frame'].setValue(last_frame)
+    root['fps'].setValue(float(fps_number))
+    root['format'].setValue(new_format)
+
+    read_node = nuke.createNode('Read')
+    read_node['file'].setValue(retrieved_item['path'])
+    read_node['first'].setValue(first_frame)
+    read_node['last'].setValue(last_frame)
+    read_node['origfirst'].setValue(first_frame)
+    read_node['origlast'].setValue(last_frame)
+    read_node['format'].setValue(new_format)
+    read_node['colorspace'].setValue('rec709')
+
+    ocio_colorspace_node = nuke.createNode('OCIOColorSpace')
+    ocio_colorspace_node['in_colorspace'].setValue('linear')
+    ocio_colorspace_node['out_colorspace'].setValue('rec709')
+    ocio_colorspace_node.setInput(0, read_node)
+
+    ocio_file_transform_node = nuke.createNode('OCIOFileTransform')
+    ocio_file_transform_node['file'].setValue(
+        'X:/_PMO/ColorSpace/AlexaV4LogC/ARRI_LogC4-to-Gamma24_Rec709-D65_v1-65.cube')
+    ocio_file_transform_node['working_space'].setValue('linear')
+    ocio_file_transform_node.setInput(0, ocio_colorspace_node)
+
+    copy_path = convert_to_copy_path(retrieved_item["path"])
+    temp_folder_path = os.path.join(copy_path, 'temp')
+    temp_folder_path = temp_folder_path.replace('\\', '/')
+
+    if not os.path.exists(temp_folder_path):
+        os.makedirs(temp_folder_path)
+        subprocess.call(['attrib', '+h', temp_folder_path])
+
+    new_output_path = os.path.join(temp_folder_path, f'{origin_directory_path}.mov')
+    new_output_path = new_output_path.replace('\\', '/')
+
+    if not os.path.isfile(new_output_path):
+        #     print(f'This file({new_output_path}) is already exists.')
+        # else:
+        write_node = nuke.createNode('Write')
+        write_node['file_type'].setValue('mov')
+        write_node['file'].setValue(new_output_path)
+        write_node['colorspace'].setValue('linear')
+        write_node['mov64_codec'].setValue('AVdh\tAvid DNxHR')
+        write_node['mov64_fps'].setValue(float(fps_number))
+        write_node['mov64_dnxhr_codec_profile'].setValue('HQX 4:2:2 12-bit')
+
+        write_node.setInput(0, ocio_file_transform_node)
+
+        nuke.execute(write_node, first_frame, last_frame)
+
+        print(f"Read node created for sequence: {retrieved_item['path']}")
+        print(f"Original range set to: {first_frame} - {last_frame}")
+
+
+
 def rec709_Mov():
     parts = retrieved_item['path'].split('/')
     origin_directory_path = parts[-2]
@@ -776,12 +849,20 @@ if __name__ == '__main__':
             parts = parts[-1].split('_')
 
         # Extract the necessary parts
-        seq_code = parts[0]
-        shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
-        category = parts[3]
-        version = parts[4]
+        # Drama
+        if origin_directory_path.startswith("EP"):
+            seq_code = parts[0]
+            shot_code = parts[0] + '_' + parts[1] + '_' + parts[2]
+            category = parts[3]
+            version = parts[4]
+        # Movie
+        else:
+            seq_code = parts[0]
+            shot_code = parts[0] + '_' + parts[1]
+            category = parts[2]
+            version = parts[3]
 
-        # Extract version information from source path
+            # Extract version information from source path
         target_folder = os.path.join(
             r'X:\ShotGrid_Test_jw\Project',
             project_code,
@@ -816,6 +897,8 @@ if __name__ == '__main__':
                     ACEScg_Mov()
                 elif retrieved_item['colorspace'] == 'AlexaV3LogC':
                     AlexaV3_Mov()
+                elif retrieved_item['colorspace'] == 'AlexaV4LogC':
+                    AlexaV4_Mov()
                 elif retrieved_item['colorspace'] == 'rec709':
                     rec709_Mov()
                 elif retrieved_item['colorspace'] == 'sRGB':
