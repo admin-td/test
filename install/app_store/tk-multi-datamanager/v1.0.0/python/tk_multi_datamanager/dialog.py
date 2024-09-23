@@ -13,6 +13,7 @@ import shutil
 import time
 import traceback
 import re
+import math
 
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
@@ -61,9 +62,11 @@ class CheckableItem(QtGui.QStandardItem):
     def __init__(self, file_info_dict='', save_func=True):
 
         super().__init__(file_info_dict['path'])
+        parts = file_info_dict['path'].split('/')
+        date_name = parts[-2]
 
         # Retrieve checked items
-        self.checked_items = CheckableItem.fetch_checked_items()
+        self.checked_items = CheckableItem.fetch_checked_items(date_name)
 
         if save_func:
             self.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
@@ -80,14 +83,14 @@ class CheckableItem(QtGui.QStandardItem):
                         self.setData(QtCore.Qt.Checked, QtCore.Qt.CheckStateRole)
 
     @staticmethod
-    def fetch_checked_items():
+    def fetch_checked_items(date_name):
         """
         Fetch checked items from the latest Excel file.
         """
 
         # Get the latest Excel file path
         bundle = sgtk.platform.current_bundle()
-        default_directory = "X:/ShotGrid_Test_jw/Project/" + bundle.context.project.get("name", "Undefined") + '/scan'
+        default_directory = "X:/ShotGrid_Test_jw/Project/" + bundle.context.project.get("name", "Undefined") + '/scan' + '/' + date_name
         excel_file_path = CheckableItem._get_latest_excel_file_path(default_directory)
 
         if not excel_file_path:
@@ -342,6 +345,7 @@ class AppDialog(QtGui.QWidget):
         self._current_tasks = _TaskSelection()
 
         self._summary_comment = ""
+        self._scan_path = None
 
         # set up progress reporting
         self._progress_handler = ProgressHandler(
@@ -2081,6 +2085,7 @@ class AppDialog(QtGui.QWidget):
         if paths:
             # simulate dropping the files into the dialog
             self.ui.lineEdit.setText(str(paths[0]))
+            self._scan_path = str(paths[0])
             self._add_folder_to_list(str(paths[0]))
 
     def _add_folder_to_list(self, folder_path):
@@ -2108,9 +2113,9 @@ class AppDialog(QtGui.QWidget):
                     jpg_files.append(os.path.join(root, file))
         return jpg_files
 
-    def _get_excel_data(self):
+    def _get_excel_data(self, date_name):
         bundle = sgtk.platform.current_bundle()
-        default_directory = "X:/ShotGrid_Test_jw/Project/" + bundle.context.project.get("name", "Undefined") + '/scan'
+        default_directory = "X:/ShotGrid_Test_jw/Project/" + bundle.context.project.get("name", "Undefined") + '/scan' + '/' + date_name
 
         base_name = "scan_list_"
         ext = ".xlsx"
@@ -2213,6 +2218,7 @@ class AppDialog(QtGui.QWidget):
 
             path_segments = item.text().split("/")
             folder_name = path_segments[6]
+            date_name = path_segments[5]
             parts = folder_name.split("_")
             sequence_code = parts[0]
 
@@ -2253,9 +2259,9 @@ class AppDialog(QtGui.QWidget):
             width = metadata['width']
             height = metadata['height']
             excel_item['Resolution'] = str(f'{width}X{height}') or ''
-
-            excel_item['Fps'] = str(fps_number) or ''
-
+            if str(fps_number) == 'nan':
+                fps_number = '23.976'
+            excel_item['Fps'] = str(fps_number)
             excel_item_list.append(excel_item)
 
         if excel_item_list:
@@ -2278,7 +2284,7 @@ class AppDialog(QtGui.QWidget):
                 cell.border = border
                 cell.font = Font(bold=True)
 
-            checked_items = self._get_excel_data()
+            checked_items = self._get_excel_data(date_name)
 
             for idx, item in enumerate(excel_item_list, start=2):
                 thumbnail_path = item.get('Thumbnail')
@@ -2352,7 +2358,7 @@ class AppDialog(QtGui.QWidget):
                 adjusted_width = (max_length + 2)
                 sheet.column_dimensions[column].width = adjusted_width
 
-            save_path = self._get_save_path(self._default_directory_path)
+            save_path = self._get_save_path(self._default_directory_path + '/' + date_name)
             default_directory = os.path.dirname(save_path)
             default_file_name = os.path.basename(save_path)
             options = QtGui.QFileDialog.Options()
@@ -2384,8 +2390,10 @@ class AppDialog(QtGui.QWidget):
         return os.path.join(folder_path, next_file_name)
 
     def _on_excel_browse(self):
+        parts = self._scan_path.split('/')
+        date_name = parts[-1]
         project_name = "%s" % self._bundle.context.project.get("name", "Undefined")
-        default_open_path = "X:/ShotGrid_Test_jw/Project/" + project_name + '/scan'
+        default_open_path = "X:/ShotGrid_Test_jw/Project/" + project_name + '/scan' + '/' + date_name
         options = QtGui.QFileDialog.Options()
         file_path, _ = QtGui.QFileDialog.getOpenFileName(
             self,
