@@ -17,7 +17,6 @@ the list of current work files.
 import os
 import traceback
 import re
-import nuke
 from itertools import chain
 from datetime import datetime
 
@@ -524,6 +523,9 @@ class FileSaveForm(FileFormBase):
         if not self._current_env or not self._current_env.work_template or not file:
             return
 
+        app = sgtk.platform.current_bundle()
+        current_engine_name = app.engine.name
+
         name_is_used = "name" in self._current_env.work_template.keys
         ext_is_used = "extension" in self._current_env.work_template.keys
         version_is_used = "version" in self._current_env.work_template.keys
@@ -556,7 +558,10 @@ class FileSaveForm(FileFormBase):
                 current_name = value_to_str(self._ui.name_edit.text())
                 default_name = self._current_env.save_as_default_name
                 # name = current_name or default_name or "scene"
-                name = self._current_env.context.entity['name'] + '_comp'
+                if current_engine_name =='tk-photoshopcc':
+                    name = self._current_env.context.entity['name'] + '_matte'
+                elif current_engine_name =='tk-nuke':
+                    name = self._current_env.context.entity['name'] + '_comp'
 
             self._ui.name_edit.setText(name)
         self._ui.time_edit.setText('00:00')
@@ -590,6 +595,8 @@ class FileSaveForm(FileFormBase):
             return
 
         self._current_env = env
+        app = sgtk.platform.current_bundle()
+        current_engine_name = app.engine.name
 
         # use the new work area to update the UI:
         if self._current_env and self._current_env.work_template:
@@ -606,7 +613,10 @@ class FileSaveForm(FileFormBase):
                 if not name and not name_is_optional:
                     # lets populate name with a default value:
                     # name = self._current_env.save_as_default_name or self._current_env.context.entity['name']+'_comp'
-                    name = self._current_env.context.entity['name'] + '_comp'
+                    if current_engine_name == 'tk-photoshopcc':
+                        name = self._current_env.context.entity['name'] + '_matte'
+                    elif current_engine_name == 'tk-nuke':
+                        name = self._current_env.context.entity['name'] + '_comp'
                 self._ui.name_edit.setText(name)
 
             self._ui.name_label.setVisible(name_is_used)
@@ -706,6 +716,8 @@ class FileSaveForm(FileFormBase):
     def _on_save(self):
         """ """
         app = sgtk.platform.current_bundle()
+        current_engine_name = app.engine.name
+        logger = sgtk.platform.get_logger(__name__)
         if not self._current_env:
             return
 
@@ -736,6 +748,8 @@ class FileSaveForm(FileFormBase):
             time = self._ui.time_edit.text()
 
             # Time log 세팅 임시로 기능 비활성화
+            # if current_engine_name == 'tk-nuke':
+                # import nuke
             # if version != 1:
             #     if re.match(r'^\d{2}:\d{2}$', time):
             #         hours, minutes = map(int, time.split(':'))
@@ -885,8 +899,14 @@ class FileSaveForm(FileFormBase):
                 status_data = {'sg_modified_by': sg_data}
                 sg.update('Task', task_id, status_data)
                 file_content = str(sg_data)
-                comp_index = path_to_save.find('Comp')
-                notepad_path = path_to_save[:comp_index] + 'editorial\\save_log.txt'
+
+                if current_engine_name =='tk-photoshopcc':
+                    matte_index = path_to_save.find('Matte')
+                    notepad_path = path_to_save[:matte_index] + 'editorial\\matte_save_log.txt'
+                elif current_engine_name =='tk-nuke':
+                    comp_index = path_to_save.find('Comp')
+                    notepad_path = path_to_save[:comp_index] + 'editorial\\comp_save_log.txt'
+
                 self.save_to_notepad(notepad_path, file_content)
 
             except Exception:

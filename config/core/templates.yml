@@ -163,6 +163,14 @@ keys:
         format_spec: "05"
         alias: SEQ
 
+    photoshop_extension:
+        type: str
+        choices:
+            psd: Photoshop Document(.psd)
+            psb: Photoshop Big (.psb)
+        default: psd
+        alias: extension
+
 
 #
 # The paths section contains all the the key locations where files are to be stored
@@ -243,22 +251,22 @@ paths:
 
     # The location of WIP files
     photoshop_shot_work:
-        definition: '@shot_root/work/photoshop/{name}.v{version}.psd'
+        definition: '@shot_root/Matte/work/photoshop/{name}_v{version}.{photoshop_extension}'
     shot_work_area_photoshop:
-        definition: '@shot_root/work/photoshop'
+        definition: '@shot_root/Matte/work/photoshop'
     # The location of backups of WIP files
     photoshop_shot_snapshot:
-        definition: '@shot_root/work/photoshop/snapshots/{name}.v{version}.{timestamp}.psd'
+        definition: '@shot_root/Matte/work/photoshop/snapshots/{name}_v{version}.{timestamp}.{photoshop_extension}'
     # The location of published files
     shot_publish_area_photoshop:
-        definition: '@shot_root/publish/photoshop'
+        definition: '@shot_root/Matte/publish/photoshop'
     photoshop_shot_publish:
-        definition: '@shot_root/publish/photoshop/{name}.v{version}.psd'
+        definition: '@shot_root/Matte/publish/photoshop/{name}_v{version}.{photoshop_extension}'
     # The location of the published images
     photoshop_shot_png_publish:
-        definition: '@shot_root/publish/photoshop/{name}.v{version}.png'
+        definition: '@shot_root/Matte/publish/photoshop/{name}_v{version}.png'
     photoshop_shot_jpg_publish:
-        definition: '@shot_root/publish/photoshop/{name}.v{version}.jpg'
+        definition: '@shot_root/Matte/publish/photoshop/{name}_v{version}.jpg'
 
     #
     # After Effects
@@ -449,22 +457,22 @@ paths:
 
     # The location of WIP files
     photoshop_asset_work:
-        definition: '@asset_root/work/photoshop/{name}.v{version}.psd'
+        definition: '@asset_root/Matte/work/photoshop/{name}_v{version}.{photoshop_extension}'
     asset_work_area_photoshop:
-        definition: '@asset_root/work/photoshop'
+        definition: '@asset_root/Matte/work/photoshop'
     # The location of backups of WIP files
     photoshop_asset_snapshot:
-        definition: '@asset_root/work/photoshop/snapshots/{name}.v{version}.{timestamp}.psd'
+        definition: '@asset_root/Matte/work/photoshop/snapshots/{name}_v{version}.{timestamp}.{photoshop_extension}'
     # The location of published files
     asset_publish_area_photoshop:
-        definition: '@asset_root/publish/photoshop'
+        definition: '@asset_root/Matte/publish/photoshop'
     photoshop_asset_publish:
-        definition: '@asset_root/publish/photoshop/{name}.v{version}.psd'
+        definition: '@asset_root/Matte/publish/photoshop/{name}_v{version}.{photoshop_extension}'
     # The location of the published images
     photoshop_asset_png_publish:
-        definition: '@asset_root/publish/photoshop/{name}.v{version}.png'
+        definition: '@asset_root/Matte/publish/photoshop/{name}_v{version}.png'
     photoshop_asset_jpg_publish:
-        definition: '@asset_root/publish/photoshop/{name}.v{version}.jpg'
+        definition: '@asset_root/Matte/publish/photoshop/{name}_v{version}.jpg'
     #
     # after effects
     #

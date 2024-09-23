@@ -275,8 +275,16 @@ class FileFinder(QtCore.QObject):
         files = {}
         if work_files:
             original_path = work_files[0] or None
-            comp_index = original_path['path'].find('Comp')
-            notepad_path = original_path['path'][:comp_index] + 'editorial\\save_log.txt' or None
+            app = sgtk.platform.current_bundle()
+            current_engine_name = app.engine.name
+            path_to_save = original_path['path']
+            if current_engine_name == 'tk-photoshopcc':
+                matte_index = path_to_save.find('Matte')
+                notepad_path = path_to_save[:matte_index] + 'editorial\\matte_save_log.txt'
+            elif current_engine_name == 'tk-nuke':
+                comp_index = path_to_save.find('Comp')
+                notepad_path = path_to_save[:comp_index] + 'editorial\\comp_save_log.txt'
+
             content = self.read_notepad(notepad_path)
             matches = self.extract_version_and_author(content)
 
