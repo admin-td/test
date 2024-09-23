@@ -889,6 +889,8 @@ if __name__ == '__main__':
                 first_frame = retrieved_item['metadata']['first_frame']
                 last_frame = retrieved_item['metadata']['last_frame']
                 fps_number = retrieved_item['metadata']['fps']
+                if str(fps_number) == 'nan':
+                    fps_number = 23.976
                 new_format = nuke.addFormat(f"{width} {height} 1 1 HD_{retrieved_item['path']}_{timestamp}")
 
                 if retrieved_item['colorspace'] == 'ACES - ACES2065-1':
@@ -915,6 +917,8 @@ if __name__ == '__main__':
                     height = retrieved_item['metadata']['height']
                     fps_value = retrieved_item['metadata']['fps']
                     fps_number = re.search(r'\((.*?)\)', fps_value).group(1)
+                    if str(fps_number) == 'nan':
+                        fps_number = 23.976
                     new_format = nuke.addFormat(f"{width} {height} 1 1 HD_{retrieved_item['path']}_{timestamp}")
                     if retrieved_item['colorspace'] == 'ACES - ACES2065-1':
                         ACES_2065_1_Seq()
@@ -935,6 +939,8 @@ if __name__ == '__main__':
                     width = retrieved_item['metadata']['width']
                     height = retrieved_item['metadata']['height']
                     fps_number = retrieved_item['metadata']['fps']
+                    if str(fps_number) == 'nan':
+                        fps_number = 23.976
                     new_format = nuke.addFormat(f"{width} {height} 1 1 HD_{retrieved_item['path']}_{timestamp}")
                     if retrieved_item['colorspace'] == 'ACES - ACES2065-1':
                         ACES_2065_1_Seq()
