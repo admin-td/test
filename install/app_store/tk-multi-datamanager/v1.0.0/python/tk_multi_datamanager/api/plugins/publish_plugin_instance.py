@@ -212,6 +212,7 @@ class PublishPluginInstance(PluginInstanceBase):
             if 'Upload' not in settings:
                 checked_item_path = folder_path.replace('\\', '/')
                 parts = checked_item_path.split('/')
+                date_name = parts[-2]
                 project_code = parts[3]
                 origin_directory_path = parts[-1]
 
@@ -252,10 +253,11 @@ class PublishPluginInstance(PluginInstanceBase):
                                 padding = len(frame_number)
                                 new_filename = files[0].replace(frame_number, f"%0{padding}d")
                                 file = new_filename
+                                temp_file = file.split('.')[-3]
                         else:
                             if files[0].endswith('.mov'):
                                 file = files[0]
-
+                                temp_file = file.split('.')[-2]
                 target_folder_file = target_folder + '\\' + file
 
                 config_path = r'X:\ShotGrid_Test_jw\Project\config_test'
@@ -288,9 +290,8 @@ class PublishPluginInstance(PluginInstanceBase):
                     ['code', 'is', shot_code]
                 ])
 
-                check_items = CheckableItem.fetch_checked_items()
-                check_item = next(item for item in check_items if item['Shot_Code'] == shot_code)
-
+                check_items = CheckableItem.fetch_checked_items(date_name)
+                check_item = next(item for item in check_items if item['Shot_Code'] + '_' + item['Version'] == shot_code + '_' + version)
                 # shot_data by excel
                 if not existing_shots:
                     shot_data = {
@@ -304,33 +305,63 @@ class PublishPluginInstance(PluginInstanceBase):
                         'sg_org_resolution': check_item['Resolution'],
                         'sg_fps': check_item['Fps'],
                         'sg_colorspace' : colorspace,
+                        'sg_version' : check_item['Version'],
                         "task_template": {"type": "TaskTemplate", "id": 46}
                     }
                     new_shot = sg.create('Shot', shot_data)
                     shot_id = new_shot['id']
-                    logger.info(f"Created Shot: {new_shot}")
                 else:
-                    filters = [
-                        ['project', 'is', {'type': 'Project', 'id': project_id}],
-                        ['code', 'is', shot_code]
-                    ]
-                    fields = ['id']
-                    shot_id = sg.find_one('Shot', filters, fields)
-                    shot_id = shot_id['id']
-
-                    shot_data = {
-                        'project': {'type': 'Project', 'id': project_id},
-                        'sg_sequence': {'type': 'Sequence', 'id': sequence_id},
-                        'code': shot_code,
-                        'sg_cut_in': check_item['Cut_In'],
-                        'sg_cut_out': check_item['Cut_Out'],
-                        'sg_cut_duration': check_item['Duration'],
-                        'sg_org_clip': check_item['Org_Clip'],
-                        'sg_org_resolution': check_item['Resolution'],
-                        'sg_fps': check_item['Fps'],
-                        'sg_colorspace': colorspace
-                    }
-                    sg.update('Shot', shot_id, shot_data)
+                    # org인 경우 수정하지 않음 , 다만 버전이 다른 org 인 경우는 메타데이터 수정
+                    if check_item['Type'] == 'org':
+                        filters = [
+                            ['project', 'is', {'type': 'Project', 'id': project_id}],
+                            ['code', 'is', shot_code]
+                        ]
+                        fields = ['id', 'sg_version']
+                        shot = sg.find_one('Shot', filters, fields)
+                        version = shot['sg_version']
+                        shot_id = shot['id']
+                        temp_version = temp_file.split('_')[-1]
+                        if version != temp_version:
+                            shot_data = {
+                                'project': {'type': 'Project', 'id': project_id},
+                                'sg_sequence': {'type': 'Sequence', 'id': sequence_id},
+                                'code': shot_code,
+                                'sg_cut_in': check_item['Cut_In'],
+                                'sg_cut_out': check_item['Cut_Out'],
+                                'sg_cut_duration': check_item['Duration'],
+                                'sg_org_clip': check_item['Org_Clip'],
+                                'sg_org_resolution': check_item['Resolution'],
+                                'sg_fps': check_item['Fps'],
+                                'sg_colorspace': colorspace,
+                                'sg_version': check_item['Version'],
+                            }
+                            sg.update('Shot', shot_id, shot_data)
+                        else:
+                            pass
+                    # org 가 아니면 덮어 씌움
+                    else:
+                        filters = [
+                            ['project', 'is', {'type': 'Project', 'id': project_id}],
+                            ['code', 'is', shot_code]
+                        ]
+                        fields = ['id']
+                        shot_id = sg.find_one('Shot', filters, fields)
+                        shot_id = shot_id['id']
+                        shot_data = {
+                            'project': {'type': 'Project', 'id': project_id},
+                            'sg_sequence': {'type': 'Sequence', 'id': sequence_id},
+                            'code': shot_code,
+                            'sg_cut_in': check_item['Cut_In'],
+                            'sg_cut_out': check_item['Cut_Out'],
+                            'sg_cut_duration': check_item['Duration'],
+                            'sg_org_clip': check_item['Org_Clip'],
+                            'sg_org_resolution': check_item['Resolution'],
+                            'sg_fps': check_item['Fps'],
+                            'sg_colorspace': colorspace,
+                            'sg_version': check_item['Version'],
+                        }
+                        sg.update('Shot', shot_id, shot_data)
 
                 upload_movie_path = target_folder + '\\temp\\'
 
@@ -339,10 +370,13 @@ class PublishPluginInstance(PluginInstanceBase):
                 upload_movie_path = upload_movie_path + mov_files[0]
 
                 if category == 'org':
+                    category_type = category
                     file_type_id = 166
                 elif category == 'edit':
+                    category_type = category
                     file_type_id = 167
                 elif category.startswith("src"):
+                    category_type = 'src'
                     file_type_id = 199
 
                 if path.endswith('mov'):
@@ -352,6 +386,9 @@ class PublishPluginInstance(PluginInstanceBase):
                     movie_file_path = upload_movie_path
                     frames_file_path = target_folder_file
 
+                # Task ID
+                task = sg.find_one("Task", [["content", "is", "plates"], ["entity", "is", {"type": "Shot", "id": shot_id}]], ["id"])
+
                 # MOV file version register
                 version_data = {
                     'project': {'type': 'Project', 'id': project_id},
@@ -359,7 +396,9 @@ class PublishPluginInstance(PluginInstanceBase):
                     'code': shot_code + '_' + category + '_' + version,  # version name
                     'sg_path_to_movie': movie_file_path,
                     'sg_path_to_frames': frames_file_path,
-                    'sg_version_type' : category
+                    'sg_version_type' : category_type,
+                    'sg_task': {'type': 'Task', 'id': task['id']},
+                    'sg_status_list': 'pub'
                 }
 
                 # Version create

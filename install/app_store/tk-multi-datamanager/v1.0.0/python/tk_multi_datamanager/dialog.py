@@ -76,7 +76,7 @@ class CheckableItem(QtGui.QStandardItem):
             else:
                 # Check if the current item should be checked
                 for item in self.checked_items:
-                    if item['Shot_Code'] + '_' + item['Type'] in file_info_dict['path']:
+                    if item['Shot_Code'] + '_' + item['Type'] + '_' + item['Version'] in file_info_dict['path']:
                         self.setData(QtCore.Qt.Unchecked, QtCore.Qt.CheckStateRole)
                         break
                     else:
@@ -2232,6 +2232,7 @@ class AppDialog(QtGui.QWidget):
             excel_item['Sequence'] = sequence_code or ''
             excel_item['Shot'] = shot_code or ''
             excel_item['Type'] = category
+            excel_item['Version'] = version
 
             if first_file.endswith('mov'):
                 first_frame = metadata['first_frame'] + 1000
@@ -2271,7 +2272,7 @@ class AppDialog(QtGui.QWidget):
 
             # Add header
             headers = ["Thumbnail", "Sequence", "Shot_Code", "Type", "Cut_In", "Cut_Out", "Duration", "Org_Clip",
-                       "Resolution", "Fps", "Check"]
+                       "Resolution", "Fps", "Version", "Check"]
             gray_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
             border = Border(left=Side(style='thin'),
                             right=Side(style='thin'),
@@ -2298,10 +2299,11 @@ class AppDialog(QtGui.QWidget):
                 original_clip = item.get('Org_Clip')
                 resolution = item.get('Resolution')
                 fps = item.get('Fps')
+                version = item.get('Version')
 
                 if checked_items:
                     for checked_item in checked_items:
-                        if checked_item["Shot_Code"] + '_' + checked_item["Type"] == shot + '_' + type:
+                        if checked_item["Shot_Code"] + '_' + checked_item["Type"] + '_' + checked_item["Version"] == shot + '_' + type + '_' + version:
                             if checked_item["Check"] == 'checked':
                                 check = checked_item["Check"]
 
@@ -2339,7 +2341,9 @@ class AppDialog(QtGui.QWidget):
                 resolution_cell.border = border
                 fps_cell = sheet.cell(row=idx, column=10, value=fps)
                 fps_cell.border = border
-                check_cell = sheet.cell(row=idx, column=11, value=check)
+                version_cell = sheet.cell(row=idx, column=11, value=version)
+                version_cell.border = border
+                check_cell = sheet.cell(row=idx, column=12, value=check)
                 check_cell.border = border
 
                 # path_cell = sheet.cell(row=idx, column=7, value=item_path)
