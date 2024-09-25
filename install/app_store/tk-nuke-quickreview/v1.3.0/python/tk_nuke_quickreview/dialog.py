@@ -272,63 +272,71 @@ class Dialog(QtGui.QWidget):
         )
 
     @sgtk.LogManager.log_timing
-    def _render(self, mov_path, start_frame, end_frame):
+    def _render(self, start_frame, end_frame):
         """
         Renders write node
 
-        :param mov_path: temporary path where quicktime should be written
         :param int start_frame: First frame to render
         :param int end_frame: Last frame to render
         """
         import nuke
 
         # setup quicktime output resolution
-        (width, height) = self._bundle.execute_hook_method(
-            "settings_hook",
-            "get_resolution",
-            base_class=self._bundle.base_hooks.ReviewSettings,
-        )
-
-        mov_reformat_node = self._group_node.node("mov_reformat")
-        mov_reformat_node["box_width"].setValue(width)
-        mov_reformat_node["box_height"].setValue(height)
-
-        # setup output quicktime path
-        mov_out = self._group_node.node("mov_writer")
-        mov_path = mov_path.replace(os.sep, "/")
+        # (width, height) = self._bundle.execute_hook_method(
+        #     "settings_hook",
+        #     "get_resolution",
+        #     base_class=self._bundle.base_hooks.ReviewSettings,
+        # )
+        #
+        # mov_reformat_node = self._group_node.node("mov_reformat")
+        # mov_reformat_node["box_width"].setValue(width)
+        # mov_reformat_node["box_height"].setValue(height)
+        #
+        # # setup output quicktime path
+        # mov_out = self._group_node.node("mov_writer")
+        # mov_path = mov_path.replace(os.sep, "/")
+        #
+        # for node in nuke.allNodes():
+        #     if node.name() == 'FlowProductionTrackingQuickReview':
+        #         write_node = node.input(0)
+        #         for knob in write_node.knobs():
+        #             if knob == 'name':
+        #                 continue
+        #             else:
+        #                 mov_out[knob].setValue(write_node[knob].value())
+        # mov_out["file"].setValue(mov_path)
+        #
+        # # apply the Write node codec settings we'll use for generating the Quicktime
+        # self._bundle.execute_hook_method(
+        #     "settings_hook",
+        #     "setup_quicktime_node",
+        #     write_node=mov_out,
+        #     base_class=self._bundle.base_hooks.ReviewSettings,
+        # )
+        #
+        # # turn on the node
+        # mov_out.knob("disable").setValue(False)
+        #
+        # # render everything - default to using the first view on stereo
+        # logger.debug("Rendering quicktime")
+        # try:
+        #     first_view = nuke.views()[0]
+        #     nuke.executeMultiple(
+        #         [mov_out], ([start_frame - 1, end_frame, 1],), [first_view]
+        #     )
+        #     return mov_out
+        # finally:
+        #     # turn off the nodes again
+        #     mov_out.knob("disable").setValue(True)
 
         for node in nuke.allNodes():
             if node.name() == 'FlowProductionTrackingQuickReview':
                 write_node = node.input(0)
-                for knob in write_node.knobs():
-                    if knob == 'name':
-                        continue
-                    else:
-                        mov_out[knob].setValue(write_node[knob].value())
-        mov_out["file"].setValue(mov_path)
-
-        # apply the Write node codec settings we'll use for generating the Quicktime
-        self._bundle.execute_hook_method(
-            "settings_hook",
-            "setup_quicktime_node",
-            write_node=mov_out,
-            base_class=self._bundle.base_hooks.ReviewSettings,
-        )
-
-        # turn on the node
-        mov_out.knob("disable").setValue(False)
-
-        # render everything - default to using the first view on stereo
-        logger.debug("Rendering quicktime")
-        try:
-            first_view = nuke.views()[0]
-            nuke.executeMultiple(
-                [mov_out], ([start_frame - 1, end_frame, 1],), [first_view]
-            )
-            return mov_out
-        finally:
-            # turn off the nodes again
-            mov_out.knob("disable").setValue(True)
+                # first_view = nuke.views()[0]
+                nuke.executeMultiple(
+                    [write_node], ([start_frame, end_frame, 1],)
+                )
+                return write_node
 
     def _navigate_panel_and_close(self, panel_app, version_id):
         """
@@ -425,7 +433,7 @@ class Dialog(QtGui.QWidget):
         self._setup_formatting(version_name)
 
         # generate temp file for mov sequence
-        mov_path = os.path.join(tempfile.gettempdir(), f"{version_name}.mov")
+        # mov_path = os.path.join(tempfile.gettempdir(), f"{version_name}.mov")
         # mov_path = sgtk.util.filesystem.get_unused_path(mov_path)
 
         # get frame ranges from ui
@@ -436,7 +444,7 @@ class Dialog(QtGui.QWidget):
             raise ValueError("Could not determine frame range values from UI.")
 
         # and render!
-        mov_out = self._render(mov_path, start_frame, end_frame)
+        mov_out = self._render(start_frame, end_frame)
         mov_path = mov_out["file"].value()
 
         # create sg version
